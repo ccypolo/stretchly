@@ -245,6 +245,47 @@ window.onload = async (e) => {
     }
   })
 
+  document.querySelectorAll('input[type="text"]').forEach(input => {
+    input.value = settings[input.name] || ''
+    if (!eventsAttached) {
+      input.onchange = (event) => {
+        window.settings.saveSettings(input.name, input.value)
+      }
+    }
+  })
+
+  document.querySelector('[name="browseMicrobreakIdeas"]').onclick = async () => {
+    const filePath = await window.settings.openIdeasFile('externalMicrobreakIdeasPath')
+    if (filePath) {
+      document.querySelector('#externalMicrobreakIdeasPath').value = filePath
+    }
+  }
+
+  document.querySelector('[name="browseBreakIdeas"]').onclick = async () => {
+    const filePath = await window.settings.openIdeasFile('externalBreakIdeasPath')
+    if (filePath) {
+      document.querySelector('#externalBreakIdeasPath').value = filePath
+    }
+  }
+
+  document.querySelector('[name="editMicrobreakIdeas"]').onclick = async () => {
+    const path = document.querySelector('#externalMicrobreakIdeasPath').value
+    if (path) {
+      await window.settings.openIdeasEditor(path, 'miniBreak')
+    } else {
+      window.alert(await window.i18next.t('preferences.settings.editNoPath'))
+    }
+  }
+
+  document.querySelector('[name="editBreakIdeas"]').onclick = async () => {
+    const path = document.querySelector('#externalBreakIdeasPath').value
+    if (path) {
+      await window.settings.openIdeasEditor(path, 'longBreak')
+    } else {
+      window.alert(await window.i18next.t('preferences.settings.editNoPath'))
+    }
+  }
+
   document.querySelectorAll('.sounds img').forEach(preview => {
     if (!eventsAttached) {
       preview.onclick = (event) =>
@@ -265,7 +306,7 @@ window.onload = async (e) => {
     }
   })
 
-  document.querySelector('.settings > div > button').onclick = (event) => {
+  document.querySelector('[name="restoreDefaults"]').onclick = (event) => {
     window.stretchly.restoreDefaults()
   }
 

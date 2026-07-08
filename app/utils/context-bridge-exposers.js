@@ -68,7 +68,9 @@ function exposeSettings () {
     },
     saveSettings: async (key, value) => {
       ipcRenderer.send('save-setting', key, value)
-    }
+    },
+    openIdeasFile: (settingKey) => ipcRenderer.invoke('open-ideas-file', settingKey),
+    openIdeasEditor: (filePath, type) => ipcRenderer.invoke('open-ideas-editor', filePath, type)
   })
 }
 
@@ -122,6 +124,14 @@ function exposeUtils () {
   })
 }
 
+function exposeIdeasEditor () {
+  contextBridge.exposeInMainWorld('ideasEditor', {
+    readIdeasFile: (filePath, type) => ipcRenderer.invoke('read-ideas-file', filePath, type),
+    saveIdeasFile: (filePath, type, data) => ipcRenderer.invoke('save-ideas-file', filePath, type, data),
+    closeWindow: () => ipcRenderer.send('close-current-window')
+  })
+}
+
 export {
   exposeElectronApi,
   exposeGlobal,
@@ -131,5 +141,6 @@ export {
   exposeSettings,
   exposeStretchly,
   exposeRuntime,
-  exposeUtils
+  exposeUtils,
+  exposeIdeasEditor
 }

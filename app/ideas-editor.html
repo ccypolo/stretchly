@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+  <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+  <title data-i18next="ideasEditor.title"></title>
+  <link rel="stylesheet" type="text/css" href="css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="css/color-scheme.css">
+  <link rel="stylesheet" type="text/css" href="css/commons.css">
+  <style>
+    body {
+      padding: 16px;
+      font-size: 14px;
+    }
+    .ideas-header {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .ideas-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+    .ideas-table th {
+      text-align: left;
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--text-color);
+    }
+    .ideas-table td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #ccc;
+      vertical-align: middle;
+    }
+    .ideas-table input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 28px;
+    }
+    .ideas-table textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 60px;
+      resize: vertical;
+      font-family: inherit;
+      font-size: inherit;
+    }
+    .ideas-table input[type="checkbox"] {
+      margin: 0;
+    }
+    .ideas-table .btn-delete {
+      cursor: pointer;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .error-msg {
+      color: red;
+      margin-top: 8px;
+      display: none;
+    }
+    .empty-msg {
+      text-align: center;
+      padding: 16px;
+      color: #999;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ideas-header" data-i18next="ideasEditor.header"></div>
+  <p data-i18next="ideasEditor.info"></p>
+  <table class="ideas-table" id="ideasTable">
+    <thead>
+      <tr id="tableHeader"></tr>
+    </thead>
+    <tbody id="ideasBody">
+    </tbody>
+  </table>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="actions">
+    <button type="button" id="addBtn" data-i18next="ideasEditor.add"></button>
+    <button type="button" id="saveBtn" data-i18next="ideasEditor.save"></button>
+    <button type="button" id="cancelBtn" data-i18next="ideasEditor.cancel"></button>
+  </div>
+</body>
+
+<script type="module" src="./ideas-editor-renderer.js"></script>
+</html>
+
+</html>

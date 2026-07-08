@@ -66,6 +66,22 @@
       <label data-i18next="preferences.settings.showIdeas" for="showIdeas"></label>
     </div>
     <div>
+      <input type="checkbox" value="useExternalIdeas" id="useExternalIdeas">
+      <label data-i18next="preferences.settings.useExternalIdeas" for="useExternalIdeas"></label>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.externalMicrobreakIdeasPath" for="externalMicrobreakIdeasPath"></label>
+      <input type="text" name="externalMicrobreakIdeasPath" id="externalMicrobreakIdeasPath">
+      <button type="button" name="browseMicrobreakIdeas" data-i18next="preferences.settings.browse"></button>
+      <button type="button" name="editMicrobreakIdeas" data-i18next="preferences.settings.edit"></button>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.externalBreakIdeasPath" for="externalBreakIdeasPath"></label>
+      <input type="text" name="externalBreakIdeasPath" id="externalBreakIdeasPath">
+      <button type="button" name="browseBreakIdeas" data-i18next="preferences.settings.browse"></button>
+      <button type="button" name="editBreakIdeas" data-i18next="preferences.settings.edit"></button>
+    </div>
+    <div>
       <input type="checkbox" value="allScreens" id="allScreens">
       <label data-i18next="preferences.settings.allScreens" for="allScreens"></label>
     </div>
@@ -143,7 +159,44 @@
       <hr />
     </div>
     <div>
-      <button type="button" data-i18next="preferences.settings.restoreDefaults"></button>
+      <span data-i18next="preferences.settings.opacityTheme"></span>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.opacity" data-same-width-label for="opacity"></label>
+      <input type="range" min="5" max="100" step="5" name="opacity" data-divisor="0.01" id="opacity">
+      <output data-unit="percent"></output>
+    </div>
+    <div>
+      <hr />
+    </div>
+    <div>
+      <span data-i18next="preferences.settings.breakWindowSize"></span>
+    </div>
+    <div>
+      <p data-i18next="preferences.settings.breakWindowSizeInfo"></p>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.breakWindowWidth" data-same-width-label for="breakWindowWidth"></label>
+      <input type="range" min="40" max="99" step="1" name="breakWindowWidth" data-divisor="0.01" id="breakWindowWidth">
+      <output data-unit="percent"></output>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.breakWindowHeight" data-same-width-label for="breakWindowHeight"></label>
+      <input type="range" min="40" max="99" step="1" name="breakWindowHeight" data-divisor="0.01" id="breakWindowHeight">
+      <output data-unit="percent"></output>
+    </div>
+    <div>
+      <hr />
+    </div>
+    <div>
+      <input type="checkbox" value="currentTimeInBreaks" id="currentTimeInBreaks">
+      <label data-i18next="preferences.settings.currentTimeInBreaks" for="currentTimeInBreaks"></label>
+    </div>
+    <div>
+      <hr />
+    </div>
+    <div>
+      <button type="button" name="restoreDefaults" data-i18next="preferences.settings.restoreDefaults"></button>
     </div>
   </div>
   <div class="schedule hidden">

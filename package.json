@@ -99,9 +99,6 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "7z",
-        "appx",
         "portable"
       ],
       "asarUnpack": [
@@ -133,7 +130,8 @@
       "fetch",
       "Notification",
       "alert",
-      "__electronLog"
+      "__electronLog",
+      "should"
     ]
   },
   "devDependencies": {

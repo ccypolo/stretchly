@@ -23,7 +23,9 @@
     "cancel": "取消",
     "preferences": "偏好设置",
     "contributorPreferences": "贡献者偏好设置",
-    "syncPreferences": "同步偏好设置"
+    "syncPreferences": "同步偏好设置",
+    "externalIdeasFileError": "无法加载外部休息信息文件，请检查文件路径是否正确、文件是否为有效 JSON。已回退到默认信息。",
+    "externalIdeasFormatError": "外部休息信息文件格式不正确。微休息信息需要 { \"data\": \"文本\", \"enabled\": true }，长休息信息需要 { \"data\": [\"标题\", \"正文\"], \"enabled\": true }。已回退到默认信息。"
   },
   "break": {
     "postpone": "延后此次休息",
@@ -46,6 +48,19 @@
       "window": "窗口",
       "fullscreen": "全屏",
       "showIdeas": "在休息时显示锻炼提示",
+      "useExternalIdeas": "使用外部休息信息文件替代内置提示",
+      "externalMicrobreakIdeasPath": "微休息信息文件路径：",
+      "externalBreakIdeasPath": "长休息信息文件路径：",
+      "browse": "浏览",
+      "edit": "编辑",
+      "editNoPath": "请先设置文件路径。",
+      "opacityTheme": "休息窗口透明度",
+      "opacity": "透明度：",
+      "breakWindowSize": "休息窗口大小",
+      "breakWindowSizeInfo": "调整休息窗口占屏幕的比例。",
+      "breakWindowWidth": "宽度：",
+      "breakWindowHeight": "高度：",
+      "currentTimeInBreaks": "在休息中显示当前时间",
       "allScreens": "在所有显示器显示休息提示画面",
       "monitorIdleTime": "监控系统的闲置时间（系统闲置时暂停计时）。",
       "monitorDnd": "即使处于「勿扰」模式，仍显示休息画面",
@@ -180,6 +195,19 @@
     "currentTimeInBreaks": "当前时间",
     "showTrayIcon": "显示托盘图标",
     "toShowTrayIcon": "在托盘中显示 Stretchly 图标"
+  },
+  "ideasEditor": {
+    "title": "编辑休息信息",
+    "header": "编辑休息信息",
+    "info": "添加、删除、启用或禁用休息信息。完成后点击保存。",
+    "text": "文本",
+    "title": "标题",
+    "enabled": "启用",
+    "add": "添加",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "empty": "暂无条目，点击「添加」创建。"
   },
   "utils": {
     "none_other": "{{count}}",

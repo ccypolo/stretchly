@@ -23,7 +23,9 @@
     "cancel": "Cancel",
     "preferences": "Preferences",
     "contributorPreferences": "Contributor Preferences",
-    "syncPreferences": "Sync Preferences"
+    "syncPreferences": "Sync Preferences",
+    "externalIdeasFileError": "Failed to load external ideas file. Please check that the file path is correct and the file is valid JSON. Falling back to default ideas.",
+    "externalIdeasFormatError": "External ideas file has invalid format. Microbreak ideas require { \"data\": \"text\", \"enabled\": true }, long break ideas require { \"data\": [\"title\", \"text\"], \"enabled\": true }. Falling back to default ideas."
   },
   "break": {
     "postpone": "Postpone this break",
@@ -46,6 +48,19 @@
       "window": "Window",
       "fullscreen": "Full screen",
       "showIdeas": "Show exercise tips during breaks",
+      "useExternalIdeas": "Use external ideas files instead of built-in tips",
+      "externalMicrobreakIdeasPath": "Microbreak ideas file path:",
+      "externalBreakIdeasPath": "Long break ideas file path:",
+      "browse": "Browse",
+      "edit": "Edit",
+      "editNoPath": "Please set the file path first.",
+      "opacityTheme": "Break window opacity",
+      "opacity": "Opacity:",
+      "breakWindowSize": "Break window size",
+      "breakWindowSizeInfo": "Resize break windows as a percentage of the screen.",
+      "breakWindowWidth": "Width:",
+      "breakWindowHeight": "Height:",
+      "currentTimeInBreaks": "Show current time in breaks",
       "allScreens": "Shows breaks on all monitors",
       "monitorIdleTime": "Monitor system idle time (breaks are paused if system is idle).",
       "monitorDnd": "Show breaks even in Do Not Disturb mode",
@@ -176,6 +191,19 @@
     "toShowTrayIcon": "Show Stretchly icon in tray",
     "currentTimeInBreaks": "Current time",
     "showCurrentTimeInBreaks": "Show current local time in break window"
+  },
+  "ideasEditor": {
+    "title": "Edit Ideas",
+    "header": "Edit Ideas",
+    "info": "Add, remove, enable or disable ideas. Save when done.",
+    "text": "Text",
+    "title": "Title",
+    "enabled": "Enabled",
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "empty": "No items yet. Click Add to create one."
   },
   "utils": {
     "remaining": "{{count}} remaining",

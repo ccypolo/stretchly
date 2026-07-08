@@ -4,7 +4,7 @@ import {
   powerMonitor
 } from 'electron'
 import { EventEmitter } from 'node:events'
-import { readFile, writeFile, existsSync, mkdirSync } from 'node:fs'
+import { readFile, writeFile, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'path'
 import { resolveLocalImage } from './utils/imageResolver.js'
 import { fileURLToPath } from 'url'
@@ -29,6 +29,7 @@ import { registerBreakShortcuts } from './utils/breakShortcuts.js'
 import defaultSettings from './utils/defaultSettings.js'
 import StatusMessages from './utils/statusMessages.js'
 import DisplayManager from './utils/displayManager.js'
+import loadExternalIdeas from './utils/externalIdeasLoader.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -82,6 +83,7 @@ let welcomeWin = null
 let contributorPreferencesWin = null
 let syncPreferencesWin = null
 let myStretchlyWin = null
+let ideasEditorWin = null
 let settings
 let pausedForSuspendOrLock = false
 let nextIdea = null
@@ -484,7 +486,17 @@ i18next.on('languageChanged', () => {
     preferencesWin.webContents.send('translate')
   }
   updateTray()
-  loadIdeas()
+  const ideasError = loadIdeas()
+  if (ideasError) {
+    setTimeout(() => {
+      dialog.showMessageBox({
+        type: 'warning',
+        title: 'Stretchly',
+        message: ideasError,
+        buttons: ['OK']
+      }).catch(() => {})
+    }, 1500)
+  }
 })
 
 function onSuspendOrLock () {
@@ -763,7 +775,7 @@ function startMicrobreak () {
   const modalPath = 'file://' + join(__dirname, '/microbreak.html')
   microbreakWins = []
 
-  const idea = nextIdea || (settings.get('ideas') ? microbreakIdeas.randomElement : [''])
+  const idea = nextIdea || (settings.get('ideas') ? (microbreakIdeas.randomElement || '') : [''])
   nextIdea = null
 
   if (!settings.get('silentNotifications')) {
@@ -931,7 +943,7 @@ function startBreak () {
   const modalPath = 'file://' + join(__dirname, '/break.html')
   breakWins = []
 
-  const defaultNextIdea = settings.get('ideas') ? breakIdeas.randomElement : ['', '']
+  const defaultNextIdea = settings.get('ideas') ? (breakIdeas.randomElement || ['', '']) : ['', '']
   const idea = nextIdea ? (nextIdea.map((val, index) => val || defaultNextIdea[index])) : defaultNextIdea
   nextIdea = null
 
@@ -1238,28 +1250,51 @@ function calculateBackgroundColor (color) {
 function loadIdeas () {
   let longBreakIdeasData
   let miniBreakIdeasData
-  if (settings.get('useIdeasFromSettings')) {
-    longBreakIdeasData = settings.get('breakIdeas')
-    miniBreakIdeasData = settings.get('microbreakIdeas')
-    log.info('Stretchly: loading custom break ideas from preferences file')
-  } else {
-    const t = i18next.getFixedT('en')
-    miniBreakIdeasData = Object.keys(t('miniBreakIdeas',
-      { returnObjects: true }))
-      .map((item) => {
-        return { data: i18next.t(`miniBreakIdeas.${item}.text`), enabled: true }
-      })
+  let error = null
+  if (settings.get('useExternalIdeas')) {
+    miniBreakIdeasData = loadExternalIdeas(settings.get('externalMicrobreakIdeasPath'), 'miniBreak', log)
+    longBreakIdeasData = loadExternalIdeas(settings.get('externalBreakIdeasPath'), 'longBreak', log)
+    if (miniBreakIdeasData === null || longBreakIdeasData === null) {
+      log.warn('Stretchly: falling back to default ideas due to external file error')
+      error = i18next.t('main.externalIdeasFileError')
+      miniBreakIdeasData = null
+      longBreakIdeasData = null
+    } else {
+      const miniBreakHasEnabled = miniBreakIdeasData.some(item => item.enabled && typeof item.data === 'string')
+      const longBreakHasEnabled = longBreakIdeasData.some(item => item.enabled && Array.isArray(item.data) && item.data.length >= 2)
+      if (!miniBreakHasEnabled || !longBreakHasEnabled) {
+        log.warn('Stretchly: external ideas file has no valid enabled items, falling back to defaults')
+        error = i18next.t('main.externalIdeasFormatError')
+        miniBreakIdeasData = null
+        longBreakIdeasData = null
+      }
+    }
+  }
+  if (!settings.get('useExternalIdeas') || miniBreakIdeasData === null) {
+    if (settings.get('useIdeasFromSettings')) {
+      longBreakIdeasData = settings.get('breakIdeas')
+      miniBreakIdeasData = settings.get('microbreakIdeas')
+      log.info('Stretchly: loading custom break ideas from preferences file')
+    } else {
+      const t = i18next.getFixedT('en')
+      miniBreakIdeasData = Object.keys(t('miniBreakIdeas',
+        { returnObjects: true }))
+        .map((item) => {
+          return { data: i18next.t(`miniBreakIdeas.${item}.text`), enabled: true }
+        })
 
-    longBreakIdeasData = Object.keys(t('longBreakIdeas',
-      { returnObjects: true }))
-      .map((item) => {
-        return { data: [i18next.t(`longBreakIdeas.${item}.title`), i18next.t(`longBreakIdeas.${item}.text`)], enabled: true }
-      })
-    log.info('Stretchly: loading default break ideas')
+      longBreakIdeasData = Object.keys(t('longBreakIdeas',
+        { returnObjects: true }))
+        .map((item) => {
+          return { data: [i18next.t(`longBreakIdeas.${item}.title`), i18next.t(`longBreakIdeas.${item}.text`)], enabled: true }
+        })
+      log.info('Stretchly: loading default break ideas')
+    }
   }
 
   breakIdeas = new IdeasLoader(longBreakIdeasData).ideas()
   microbreakIdeas = new IdeasLoader(miniBreakIdeasData).ideas()
+  return error
 }
 
 function pauseBreaks (milliseconds) {
@@ -1321,6 +1356,35 @@ function createPreferencesWindow () {
   })
   preferencesWin.once('closed', () => {
     preferencesWin = null
+  })
+}
+
+function createIdeasEditorWindow (filePath, type) {
+  if (ideasEditorWin) {
+    ideasEditorWin.show()
+    return
+  }
+  const editorPath = 'file://' + join(__dirname, '/ideas-editor.html') + `?file=${encodeURIComponent(filePath)}&type=${encodeURIComponent(type)}`
+  ideasEditorWin = new BrowserWindow({
+    autoHideMenuBar: true,
+    show: false,
+    backgroundThrottling: false,
+    icon: windowIconPath(),
+    width: 650,
+    height: 500,
+    backgroundColor: '#EDEDED',
+    webPreferences: {
+      preload: join(__dirname, './ideas-editor-preload.mjs'),
+      sandbox: false
+    }
+  })
+  ideasEditorWin.webContents.loadURL(editorPath)
+  ideasEditorWin.once('ready-to-show', () => {
+    ideasEditorWin.center()
+    ideasEditorWin.show()
+  })
+  ideasEditorWin.once('closed', () => {
+    ideasEditorWin = null
   })
 }
 
@@ -1627,6 +1691,17 @@ ipcMain.on('save-setting', function (event, key, value) {
 
   settings.set(key, value)
 
+  if (key === 'useExternalIdeas' || key === 'externalMicrobreakIdeasPath' || key === 'externalBreakIdeasPath') {
+    const error = loadIdeas()
+    if (error) {
+      dialog.showMessageBoxSync(BrowserWindow.fromWebContents(event.sender), {
+        type: 'warning',
+        title: 'Stretchly',
+        message: error
+      })
+    }
+  }
+
   updateTray()
 })
 
@@ -1760,6 +1835,53 @@ ipcMain.handle('i18next-dir', (event) => {
 
 ipcMain.handle('settings-get', (event, key) => {
   return settings.get(key)
+})
+
+ipcMain.handle('open-ideas-file', async (event, settingKey) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  const result = await dialog.showOpenDialog(win, {
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: ['json'] }]
+  })
+  if (!result.canceled && result.filePaths.length > 0) {
+    settings.set(settingKey, result.filePaths[0])
+    loadIdeas()
+    return result.filePaths[0]
+  }
+  return null
+})
+
+ipcMain.handle('read-ideas-file', (event, filePath, type) => {
+  if (!filePath || !existsSync(filePath)) {
+    return []
+  }
+  try {
+    const content = readFileSync(filePath, 'utf-8')
+    const data = JSON.parse(content)
+    if (!Array.isArray(data)) {
+      return { error: 'File is not a JSON array' }
+    }
+    return data
+  } catch (err) {
+    return { error: err.message }
+  }
+})
+
+ipcMain.handle('save-ideas-file', (event, filePath, type, data) => {
+  if (!filePath) {
+    return { error: 'No file path specified' }
+  }
+  try {
+    writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
+    loadIdeas()
+    return {}
+  } catch (err) {
+    return { error: err.message }
+  }
+})
+
+ipcMain.handle('open-ideas-editor', (event, filePath, type) => {
+  createIdeasEditorWindow(filePath, type)
 })
 
 ipcMain.on('close-current-window', (event) => {
