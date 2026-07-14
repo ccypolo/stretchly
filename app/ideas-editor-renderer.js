@@ -15,7 +15,7 @@ function buildHeader () {
   if (type === 'miniBreak') {
     tableHeader.innerHTML = '<th data-i18next="ideasEditor.text"></th><th data-i18next="ideasEditor.enabled"></th><th></th>'
   } else {
-    tableHeader.innerHTML = '<th data-i18next="ideasEditor.title"></th><th data-i18next="ideasEditor.text"></th><th data-i18next="ideasEditor.enabled"></th><th></th>'
+    tableHeader.innerHTML = '<th data-i18next="ideasEditor.titleColumn"></th><th data-i18next="ideasEditor.text"></th><th data-i18next="ideasEditor.enabled"></th><th></th>'
   }
 }
 

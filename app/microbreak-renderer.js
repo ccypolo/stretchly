@@ -69,6 +69,17 @@ window.onload = async (event) => {
   const showCurrentTime = await window.settings.get('currentTimeInBreaks')
   const currentTimeElement = showCurrentTime ? document.querySelector('.breaks > :last-child') : null
 
+  // Show weather info if available
+  const weatherEnabled = await window.settings.get('weatherEnabled')
+  if (weatherEnabled) {
+    const weather = await window.stretchly.getWeather()
+    if (weather) {
+      const weatherEl = document.querySelector('.weather-info')
+      weatherEl.innerHTML = `${weather.description} ${weather.temp}°C`
+      weatherEl.classList.remove('hidden')
+    }
+  }
+
   manualFinishElement.onclick = runOnce(() => window.breaks.finishBreak(manualAwaiting))
 
   let lastShownSecond = null

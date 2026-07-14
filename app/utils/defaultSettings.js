@@ -89,5 +89,16 @@ export default {
   longBreakManualFinish: false,
   breakHealthMode: false,
   openAtLogin: false,
-  _migratedOpenAtLogin: false
+  _migratedOpenAtLogin: false,
+  weatherEnabled: false,
+  weatherApiKey: '',
+  weatherCity: '',
+  weatherOffWorkTime: '17:30',
+  weatherWorkdays: [1, 2, 3, 4, 5],
+  weatherAlertTypes: {
+    precipitation: true,
+    wind: true,
+    extremeTemp: true,
+    fogDust: true
+  }
 }

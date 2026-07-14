@@ -30,13 +30,23 @@ import defaultSettings from './utils/defaultSettings.js'
 import StatusMessages from './utils/statusMessages.js'
 import DisplayManager from './utils/displayManager.js'
 import loadExternalIdeas from './utils/externalIdeasLoader.js'
+import WeatherManager from './utils/weatherManager.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+function formatError (err) {
+  if (!err) return 'Unknown error (no details)'
+  if (Array.isArray(err)) {
+    return err.map(e => e?.stack || e?.message || String(e)).join('\n')
+  }
+  if (typeof err === 'string') return err
+  return err.stack || err.message || String(err)
+}
+
 let handlingUncaughtException = false
 process.on('uncaughtException', (err, _) => {
-  log.error(err)
+  log.error('Stretchly: uncaught exception:', formatError(err))
   if (handlingUncaughtException) {
     return
   }
@@ -75,6 +85,7 @@ let breakPlanner
 let appIcon = null
 let autostartManager = null
 let displayManager = null
+let weatherManager = null
 let processWin = null
 let microbreakWins = null
 let breakWins = null
@@ -419,6 +430,24 @@ async function initialize (isAppStart = true) {
 
   displayManager = new DisplayManager(settings)
 
+  if (!weatherManager) {
+    weatherManager = new WeatherManager(settings)
+    weatherManager.on('severeWeatherAlert', (alerts, weather) => {
+      const alertText = alerts.map(a => i18next.t(`weather.alerts.${a}`)).join(', ')
+      showNotification(i18next.t('weather.severeAlert', { alert: alertText, temp: weather.temp }))
+      log.info(`Stretchly: severe weather alert: ${alertText}`)
+    })
+    weatherManager.on('offWorkRainAlert', (weather) => {
+      showNotification(i18next.t('weather.offWorkRain'))
+      log.info('Stretchly: off-work rain alert')
+    })
+    weatherManager.on('weatherUpdated', () => {
+      updateTray()
+    })
+  } else {
+    weatherManager.updateSettings()
+  }
+
   startI18next()
   startProcessWin()
   createWelcomeWindow()
@@ -466,6 +495,7 @@ function startI18next () {
     .init({
       lng: settings.get('language'),
       fallbackLng: 'en',
+      load: 'currentOnly',
       debug: !app.isPackaged,
       backend: {
         loadPath: join(__dirname, '/locales/{{lng}}.json'),
@@ -473,7 +503,7 @@ function startI18next () {
       }
     }, function (err, t) {
       if (err) {
-        log.error(err.stack)
+        log.error('Stretchly: i18next init error:', formatError(err))
       }
     })
 }
@@ -1433,6 +1463,16 @@ function updateTray () {
 function getTrayMenuTemplate () {
   const trayMenu = []
 
+  // Weather info at the top of the tray menu
+  if (weatherManager && weatherManager.enabled && weatherManager.weatherDisplayText) {
+    trayMenu.push({
+      label: weatherManager.weatherDisplayText,
+      enabled: false
+    }, {
+      type: 'separator'
+    })
+  }
+
   if (!settings.get('disableAppUpdateFeatures') && global.isNewVersion) {
     trayMenu.push({
       label: i18next.t('main.downloadLatestVersion'),
@@ -1601,6 +1641,9 @@ function updateToolTip () {
   if (message !== '') {
     trayMessage += '\n\n' + message
   }
+  if (weatherManager && weatherManager.enabled && weatherManager.weatherDisplayText) {
+    trayMessage += '\n\n' + weatherManager.weatherDisplayText
+  }
   if (appIcon) {
     appIcon.setToolTip(trayMessage)
   }
@@ -1689,7 +1732,15 @@ ipcMain.on('save-setting', function (event, key, value) {
     log.info('Stretchly: danger reset after disabling breakHealthMode')
   }
 
+  if (key.startsWith('weather')) {
+    // updateSettings must run after settings.set to read the new value
+  }
+
   settings.set(key, value)
+
+  if (key.startsWith('weather')) {
+    weatherManager.updateSettings()
+  }
 
   if (key === 'useExternalIdeas' || key === 'externalMicrobreakIdeasPath' || key === 'externalBreakIdeasPath') {
     const error = loadIdeas()
@@ -1728,6 +1779,11 @@ ipcMain.on('restore-defaults', (event) => {
 
 ipcMain.on('play-sound', (event, sound) => {
   processWin.webContents.send('play-sound', sound, settings.get('volume'))
+})
+
+ipcMain.handle('get-weather', () => {
+  if (!weatherManager || !weatherManager.enabled) return null
+  return weatherManager.currentWeather
 })
 
 ipcMain.handle('show-debug', (event) => {

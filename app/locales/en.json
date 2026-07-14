@@ -61,6 +61,15 @@
       "breakWindowWidth": "Width:",
       "breakWindowHeight": "Height:",
       "currentTimeInBreaks": "Show current time in breaks",
+      "weather": "Weather:",
+      "weatherEnabled": "Enable weather features",
+      "weatherApiKey": "OpenWeatherMap API Key:",
+      "weatherCity": "City (leave empty for auto-detect):",
+      "weatherOffWorkTime": "Off-work time (for rain alert):",
+      "weatherAlertPrecipitation": "Alert for precipitation (rain/snow/hail)",
+      "weatherAlertWind": "Alert for strong wind",
+      "weatherAlertExtremeTemp": "Alert for extreme temperature",
+      "weatherAlertFogDust": "Alert for fog/dust/sandstorm",
       "allScreens": "Shows breaks on all monitors",
       "monitorIdleTime": "Monitor system idle time (breaks are paused if system is idle).",
       "monitorDnd": "Show breaks even in Do Not Disturb mode",
@@ -197,7 +206,7 @@
     "header": "Edit Ideas",
     "info": "Add, remove, enable or disable ideas. Save when done.",
     "text": "Text",
-    "title": "Title",
+    "titleColumn": "Title",
     "enabled": "Enabled",
     "add": "Add",
     "save": "Save",
@@ -542,6 +551,17 @@
     "abj": {
       "title": "Overwhelmed?",
       "text": "Try the 5-4-3-2-1 Grounding Technique: Identify 5 things you can see, 4 things you can touch, 3 things you can hear, 2 things you can smell, and 1 thing you can taste."
+    }
+  },
+  "weather": {
+    "severeAlert": "Weather alert: {{alert}}, {{temp}}°C",
+    "offWorkRain": "It's raining outside! Don't forget your umbrella.",
+    "alerts": {
+      "precipitation": "precipitation",
+      "wind": "strong wind",
+      "extremeHighTemp": "extreme heat",
+      "extremeLowTemp": "extreme cold",
+      "fogDust": "fog/dust"
     }
   }
 }

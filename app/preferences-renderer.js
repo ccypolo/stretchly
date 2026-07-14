@@ -254,6 +254,39 @@ window.onload = async (e) => {
     }
   })
 
+  // Weather settings: time input
+  const offWorkTimeInput = document.querySelector('#weatherOffWorkTime')
+  if (offWorkTimeInput) {
+    offWorkTimeInput.value = settings.weatherOffWorkTime || '17:30'
+    if (!eventsAttached) {
+      offWorkTimeInput.onchange = (event) => {
+        window.settings.saveSettings('weatherOffWorkTime', event.target.value)
+      }
+    }
+  }
+
+  // Weather alert type checkboxes (nested in weatherAlertTypes object)
+  const alertTypeMap = {
+    weatherAlertPrecipitation: 'precipitation',
+    weatherAlertWind: 'wind',
+    weatherAlertExtremeTemp: 'extremeTemp',
+    weatherAlertFogDust: 'fogDust'
+  }
+  const alertTypes = settings.weatherAlertTypes || {}
+  for (const [checkboxValue, alertKey] of Object.entries(alertTypeMap)) {
+    const el = document.querySelector(`#${checkboxValue}`)
+    if (el) {
+      el.checked = !!alertTypes[alertKey]
+      if (!eventsAttached) {
+        el.onchange = () => {
+          const current = settings.weatherAlertTypes || {}
+          current[alertKey] = el.checked
+          window.settings.saveSettings('weatherAlertTypes', current)
+        }
+      }
+    }
+  }
+
   document.querySelector('[name="browseMicrobreakIdeas"]').onclick = async () => {
     const filePath = await window.settings.openIdeasFile('externalMicrobreakIdeasPath')
     if (filePath) {

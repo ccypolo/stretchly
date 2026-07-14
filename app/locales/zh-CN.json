@@ -61,6 +61,15 @@
       "breakWindowWidth": "宽度：",
       "breakWindowHeight": "高度：",
       "currentTimeInBreaks": "在休息中显示当前时间",
+      "weather": "天气：",
+      "weatherEnabled": "启用天气功能",
+      "weatherApiKey": "OpenWeatherMap API 密钥：",
+      "weatherCity": "城市（留空则自动定位）：",
+      "weatherOffWorkTime": "下班时间（用于下雨提醒）：",
+      "weatherAlertPrecipitation": "降水提醒（雨/雪/冰雹）",
+      "weatherAlertWind": "大风提醒",
+      "weatherAlertExtremeTemp": "极端温度提醒",
+      "weatherAlertFogDust": "雾霾/沙尘提醒",
       "allScreens": "在所有显示器显示休息提示画面",
       "monitorIdleTime": "监控系统的闲置时间（系统闲置时暂停计时）。",
       "monitorDnd": "即使处于「勿扰」模式，仍显示休息画面",
@@ -201,7 +210,7 @@
     "header": "编辑休息信息",
     "info": "添加、删除、启用或禁用休息信息。完成后点击保存。",
     "text": "文本",
-    "title": "标题",
+    "titleColumn": "标题",
     "enabled": "启用",
     "add": "添加",
     "save": "保存",
@@ -539,6 +548,17 @@
     "abj": {
       "title": "压力太大了？",
       "text": "试试 5-4-3-2-1 着陆法：找出你能看到的 5 样东西，你能摸到的 4 样东西，你能听到的 3 样东西，你能闻到的 2 样东西，和 1 样你可以尝到的东西。"
+    }
+  },
+  "weather": {
+    "severeAlert": "天气预警：{{alert}}，当前 {{temp}}°C",
+    "offWorkRain": "外面在下雨，记得带伞！",
+    "alerts": {
+      "precipitation": "降水",
+      "wind": "大风",
+      "extremeHighTemp": "高温",
+      "extremeLowTemp": "严寒",
+      "fogDust": "雾霾/沙尘"
     }
   }
 }
