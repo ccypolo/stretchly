@@ -8,8 +8,8 @@ window.onload = async (e) => {
     audio.play()
   })
 
-  window.stretchly.onShowNotification(async (text, silent) => {
-    __electronLog.info(`Stretchly: showing notification "${text}" (silent: ${silent})`)
+  window.stretchly.onShowNotification(async (text, silent, autoDismiss) => {
+    __electronLog.info(`Stretchly: showing notification "${text}" (silent: ${silent}, autoDismiss: ${autoDismiss})`)
     const title = await window.utils.shouldShowNotificationTitle(
       await window.runtime.platform(),
       await window.runtime.getSystemVersion()
@@ -18,11 +18,13 @@ window.onload = async (e) => {
       : ''
     const notification = new Notification(title, {
       body: text,
-      requireInteraction: true,
+      requireInteraction: !autoDismiss,
       silent,
       icon: '../build/icon.ico'
     })
-    setTimeout(() => notification.close(), 7000)
+    if (autoDismiss) {
+      setTimeout(() => notification.close(), 7000)
+    }
   })
 
   window.stretchly.onCheckVersion(async (oldVersion, notify, silent) => {

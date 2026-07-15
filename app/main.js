@@ -434,11 +434,11 @@ async function initialize (isAppStart = true) {
     weatherManager = new WeatherManager(settings)
     weatherManager.on('severeWeatherAlert', (alerts, weather) => {
       const alertText = alerts.map(a => i18next.t(`weather.alerts.${a}`)).join(', ')
-      showNotification(i18next.t('weather.severeAlert', { alert: alertText, temp: weather.temp }))
+      showNotification(i18next.t('weather.severeAlert', { alert: alertText, temp: weather.temp }), settings.get('weatherNotificationAutoDismiss'))
       log.info(`Stretchly: severe weather alert: ${alertText}`)
     })
     weatherManager.on('offWorkRainAlert', (weather) => {
-      showNotification(i18next.t('weather.offWorkRain'))
+      showNotification(i18next.t('weather.offWorkRain'), settings.get('weatherNotificationAutoDismiss'))
       log.info('Stretchly: off-work rain alert')
     })
     weatherManager.on('weatherUpdated', () => {
@@ -1649,10 +1649,11 @@ function updateToolTip () {
   }
 }
 
-function showNotification (text) {
+function showNotification (text, autoDismiss) {
   processWin.webContents.send('show-notification',
     text,
-    settings.get('silentNotifications')
+    settings.get('silentNotifications'),
+    autoDismiss !== false
   )
 }
 

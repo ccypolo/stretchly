@@ -70,6 +70,7 @@
       "weatherAlertWind": "大风提醒",
       "weatherAlertExtremeTemp": "极端温度提醒",
       "weatherAlertFogDust": "雾霾/沙尘提醒",
+      "weatherNotificationAutoDismiss": "天气通知自动消失（关闭则需手动关闭）",
       "allScreens": "在所有显示器显示休息提示画面",
       "monitorIdleTime": "监控系统的闲置时间（系统闲置时暂停计时）。",
       "monitorDnd": "即使处于「勿扰」模式，仍显示休息画面",

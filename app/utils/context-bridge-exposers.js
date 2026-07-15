@@ -81,7 +81,7 @@ function exposeStretchly () {
     onPlaySound: (callback) => ipcRenderer.on('play-sound',
       (_event, file, volume) => callback(file, volume)),
     onShowNotification: (callback) => ipcRenderer.on('show-notification',
-      (_event, text, silent) => callback(text, silent)),
+      (_event, text, silent, autoDismiss) => callback(text, silent, autoDismiss)),
     onCheckVersion: (callback) => ipcRenderer.on('check-version',
       (_event, oldVersion, notify, silent) => callback(oldVersion, notify, silent)),
     onEnableContributorPreferences: (callback) => ipcRenderer.on('enable-contributor-preferences',

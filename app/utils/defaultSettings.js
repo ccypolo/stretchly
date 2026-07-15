@@ -100,5 +100,6 @@ export default {
     wind: true,
     extremeTemp: true,
     fogDust: true
-  }
+  },
+  weatherNotificationAutoDismiss: true
 }
