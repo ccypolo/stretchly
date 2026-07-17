@@ -34,6 +34,12 @@
         <span data-i18next="preferences.nav.theme"></span>
       </div>
     </a>
+    <a href="#" data-section="weather">
+      <div>
+        <img src="images/preferences/weather.svg">
+        <span data-i18next="preferences.nav.weather"></span>
+      </div>
+    </a>
     <a href="#" data-section="about">
       <div>
         <img src="images/preferences/about.svg">
@@ -159,80 +165,8 @@
       <hr />
     </div>
     <div>
-      <span data-i18next="preferences.settings.opacityTheme"></span>
-    </div>
-    <div>
-      <label data-i18next="preferences.settings.opacity" data-same-width-label for="opacity"></label>
-      <input type="range" min="5" max="100" step="5" name="opacity" data-divisor="0.01" id="opacity">
-      <output data-unit="percent"></output>
-    </div>
-    <div>
-      <hr />
-    </div>
-    <div>
-      <span data-i18next="preferences.settings.breakWindowSize"></span>
-    </div>
-    <div>
-      <p data-i18next="preferences.settings.breakWindowSizeInfo"></p>
-    </div>
-    <div>
-      <label data-i18next="preferences.settings.breakWindowWidth" data-same-width-label for="breakWindowWidth"></label>
-      <input type="range" min="40" max="99" step="1" name="breakWindowWidth" data-divisor="0.01" id="breakWindowWidth">
-      <output data-unit="percent"></output>
-    </div>
-    <div>
-      <label data-i18next="preferences.settings.breakWindowHeight" data-same-width-label for="breakWindowHeight"></label>
-      <input type="range" min="40" max="99" step="1" name="breakWindowHeight" data-divisor="0.01" id="breakWindowHeight">
-      <output data-unit="percent"></output>
-    </div>
-    <div>
-      <hr />
-    </div>
-    <div>
       <input type="checkbox" value="currentTimeInBreaks" id="currentTimeInBreaks">
       <label data-i18next="preferences.settings.currentTimeInBreaks" for="currentTimeInBreaks"></label>
-    </div>
-    <div>
-      <hr />
-    </div>
-    <div>
-      <span data-i18next="preferences.settings.weather"></span>
-    </div>
-    <div>
-      <input type="checkbox" value="weatherEnabled" id="weatherEnabled">
-      <label data-i18next="preferences.settings.weatherEnabled" for="weatherEnabled"></label>
-    </div>
-    <div>
-      <label data-i18next="preferences.settings.weatherApiKey" for="weatherApiKey"></label>
-      <input type="text" name="weatherApiKey" id="weatherApiKey">
-    </div>
-    <div>
-      <label data-i18next="preferences.settings.weatherCity" for="weatherCity"></label>
-      <input type="text" name="weatherCity" id="weatherCity">
-    </div>
-    <div>
-      <label data-i18next="preferences.settings.weatherOffWorkTime" for="weatherOffWorkTime"></label>
-      <input type="time" name="weatherOffWorkTime" id="weatherOffWorkTime">
-    </div>
-    <div>
-      <input type="checkbox" value="weatherAlertPrecipitation" id="weatherAlertPrecipitation">
-      <label data-i18next="preferences.settings.weatherAlertPrecipitation" for="weatherAlertPrecipitation"></label>
-    </div>
-    <div>
-      <input type="checkbox" value="weatherAlertWind" id="weatherAlertWind">
-      <label data-i18next="preferences.settings.weatherAlertWind" for="weatherAlertWind"></label>
-    </div>
-    <div>
-      <input type="checkbox" value="weatherAlertExtremeTemp" id="weatherAlertExtremeTemp">
-      <label data-i18next="preferences.settings.weatherAlertExtremeTemp" for="weatherAlertExtremeTemp"></label>
-    </div>
-    <div>
-      <input type="checkbox" value="weatherAlertFogDust" id="weatherAlertFogDust">
-      <label data-i18next="preferences.settings.weatherAlertFogDust" for="weatherAlertFogDust"></label>
-    </div>
-    <div>
-      <input type="checkbox" value="weatherNotificationAutoDismiss" id="weatherNotificationAutoDismiss">
-      <label data-i18next="preferences.settings.weatherNotificationAutoDismiss" for="weatherNotificationAutoDismiss"></label>
     </div>
     <div>
       <hr />
@@ -373,7 +307,7 @@
     </div>
   </div>
   <div class="theme hidden">
-    <div>
+    <div class="section-label">
       <span data-i18next="preferences.theme.appearance">
       </span>
     </div>
@@ -407,9 +341,33 @@
       <label data-i18next="preferences.theme.transparentMode" for="enableTransparency"></label>
     </div>
     <div>
+      <label data-i18next="preferences.settings.opacity" data-same-width-label for="opacity"></label>
+      <input type="range" min="5" max="100" step="5" name="opacity" data-divisor="0.01" id="opacity">
+      <output data-unit="percent"></output>
+    </div>
+    <div class="divider">
       <hr>
     </div>
+    <div class="section-label">
+      <span data-i18next="preferences.settings.breakWindowSize"></span>
+    </div>
     <div>
+      <p data-i18next="preferences.settings.breakWindowSizeInfo"></p>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.breakWindowWidth" data-same-width-label for="breakWindowWidth"></label>
+      <input type="range" min="40" max="99" step="1" name="breakWindowWidth" data-divisor="0.01" id="breakWindowWidth">
+      <output data-unit="percent"></output>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.breakWindowHeight" data-same-width-label for="breakWindowHeight"></label>
+      <input type="range" min="40" max="99" step="1" name="breakWindowHeight" data-divisor="0.01" id="breakWindowHeight">
+      <output data-unit="percent"></output>
+    </div>
+    <div class="divider">
+      <hr>
+    </div>
+    <div class="section-label">
       <span data-i18next="preferences.theme.sounds">
       </span>
     </div>
@@ -437,10 +395,10 @@
       <label data-i18next="preferences.theme.reverie" for="reverie"></label>
       <img src="images/preferences/speaker.png" data-has-dark-version alt="Play sound">
     </div>
-    <div>
+    <div class="divider">
       <hr>
     </div>
-    <div>
+    <div class="section-label">
       <span data-i18next="preferences.theme.trayIcon">
       </span>
     </div>
@@ -460,6 +418,67 @@
     <div>
       <input type="radio" value="true" name="useMonochromeTrayIcon" id="monochrome">
       <label data-i18next="preferences.theme.monochrome" for="monochrome"></label>
+    </div>
+  </div>
+  <div class="weather hidden">
+    <div class="section-label">
+      <span data-i18next="preferences.settings.weatherBasic"></span>
+    </div>
+    <div>
+      <input type="checkbox" value="weatherEnabled" id="weatherEnabled">
+      <label data-i18next="preferences.settings.weatherEnabled" for="weatherEnabled"></label>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.weatherApiKey" for="weatherApiKey"></label>
+      <input type="text" name="weatherApiKey" id="weatherApiKey">
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.weatherCity" for="weatherCity"></label>
+      <input type="text" name="weatherCity" id="weatherCity">
+    </div>
+    <div class="divider">
+      <hr />
+    </div>
+    <div class="section-label">
+      <span data-i18next="preferences.settings.weatherAlerts"></span>
+    </div>
+    <div>
+      <label data-i18next="preferences.settings.weatherOffWorkTime" for="weatherOffWorkTime"></label>
+      <input type="time" name="weatherOffWorkTime" id="weatherOffWorkTime">
+    </div>
+    <div>
+      <input type="checkbox" value="weatherAlertPrecipitation" id="weatherAlertPrecipitation">
+      <label data-i18next="preferences.settings.weatherAlertPrecipitation" for="weatherAlertPrecipitation"></label>
+    </div>
+    <div>
+      <input type="checkbox" value="weatherAlertWind" id="weatherAlertWind">
+      <label data-i18next="preferences.settings.weatherAlertWind" for="weatherAlertWind"></label>
+    </div>
+    <div>
+      <input type="checkbox" value="weatherAlertExtremeTemp" id="weatherAlertExtremeTemp">
+      <label data-i18next="preferences.settings.weatherAlertExtremeTemp" for="weatherAlertExtremeTemp"></label>
+    </div>
+    <div>
+      <input type="checkbox" value="weatherAlertFogDust" id="weatherAlertFogDust">
+      <label data-i18next="preferences.settings.weatherAlertFogDust" for="weatherAlertFogDust"></label>
+    </div>
+    <div>
+      <input type="checkbox" value="weatherNotificationAutoDismiss" id="weatherNotificationAutoDismiss">
+      <label data-i18next="preferences.settings.weatherNotificationAutoDismiss" for="weatherNotificationAutoDismiss"></label>
+    </div>
+    <div class="divider">
+      <hr />
+    </div>
+    <div class="section-label">
+      <span data-i18next="preferences.settings.weatherForecast"></span>
+    </div>
+    <div>
+      <input type="checkbox" value="weatherForecastEnabled" id="weatherForecastEnabled">
+      <label data-i18next="preferences.settings.weatherForecastEnabled" for="weatherForecastEnabled"></label>
+    </div>
+    <div>
+      <input type="checkbox" value="weatherChangeNotify" id="weatherChangeNotify">
+      <label data-i18next="preferences.settings.weatherChangeNotify" for="weatherChangeNotify"></label>
     </div>
   </div>
   <div class="about hidden">

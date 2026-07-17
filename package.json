@@ -82,7 +82,10 @@
         "tar.xz",
         "apk"
       ],
-      "asarUnpack": "node_modules/macos-notification-state/**"
+      "asarUnpack": [
+        "node_modules/macos-notification-state/**",
+        "node_modules/@napi-rs/canvas/**"
+      ]
     },
     "rpm": {
       "fpm": [
@@ -103,7 +106,8 @@
       ],
       "asarUnpack": [
         "node_modules/windows-notification-state/**",
-        "node_modules/macos-notification-state/**"
+        "node_modules/macos-notification-state/**",
+        "node_modules/@napi-rs/canvas/**"
       ]
     },
     "portable": {
@@ -146,6 +150,7 @@
     "vitest": "^4.1.5"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.0",
     "@particle/dbus-next": "^0.11.4",
     "auto-launch": "^6.0.0-rc1",
     "dompurify": "^3.4.1",

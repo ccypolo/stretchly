@@ -8,7 +8,7 @@ body > div > :last-child {
   box-shadow: var(--box-shadow);
   display: grid;
   grid-gap: 16px;
-  grid-template: 56px/ minmax(57px, min-content) minmax(57px, min-content) minmax(57px, min-content) minmax(57px, min-content) auto;
+  grid-template: 56px/ minmax(57px, min-content) minmax(57px, min-content) minmax(57px, min-content) minmax(57px, min-content) minmax(57px, min-content) auto;
   padding: 0 16px;
   position: fixed;
   width: calc(100% - 16px);
@@ -40,7 +40,7 @@ body > div > :last-child {
   text-decoration: none
 }
 
-.navigation > :nth-child(5) {
+.navigation > :nth-child(6) {
   justify-self: end;
 }
 
@@ -146,38 +146,47 @@ body[dir=rtl] .schedule > :nth-child(17) {
   grid-column: 2/-2;
 }
 
-.theme > :nth-child(1) {
+.theme > .section-label {
   align-self: center;
   grid-column: 1/2;
-  grid-row: 1/2;
   padding: 0 16px;
   text-align: right;
 }
 
-body[dir=rtl] .theme > :nth-child(1) {
+body[dir=rtl] .theme > .section-label {
   text-align: left
 }
 
-.theme > :nth-child(10) {
+.theme > .divider {
+  grid-column: 1 / -1;
+}
+
+.weather {
+  display: grid;
+  font-size: 13px;
+  grid-gap: 16px 0;
+  grid-template: auto / 25% auto 16px;
+  letter-spacing: -0.08px;
+  padding-top: 86px;
+}
+
+.weather > div {
+  grid-column: 2/-2;
+}
+
+.weather > .section-label {
+  align-self: center;
   grid-column: 1/2;
-  grid-row: 9/10;
   padding: 0 16px;
   text-align: right;
 }
 
-body[dir=rtl] .theme > :nth-child(10) {
+body[dir=rtl] .weather > .section-label {
   text-align: left
 }
 
-.theme > :nth-child(17) {
-  grid-column: 1/2;
-  grid-row: 15/18;
-  padding: 0 16px;
-  text-align: right;
-}
-
-body[dir=rtl] .theme > :nth-child(17) {
-  text-align: left
+.weather > .divider {
+  grid-column: 1 / -1;
 }
 
 .appearance {

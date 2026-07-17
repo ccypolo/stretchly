@@ -39,6 +39,7 @@
       "settings": "Settings",
       "schedule": "Schedule",
       "theme": "Theme",
+      "weather": "Weather",
       "about": "About",
       "heart": "Love Stretchly"
     },
@@ -62,6 +63,9 @@
       "breakWindowHeight": "Height:",
       "currentTimeInBreaks": "Show current time in breaks",
       "weather": "Weather:",
+      "weatherBasic": "Basic Settings:",
+      "weatherAlerts": "Weather Alerts:",
+      "weatherForecast": "Weather Forecast:",
       "weatherEnabled": "Enable weather features",
       "weatherApiKey": "OpenWeatherMap API Key:",
       "weatherCity": "City (leave empty for auto-detect):",
@@ -71,6 +75,8 @@
       "weatherAlertExtremeTemp": "Alert for extreme temperature",
       "weatherAlertFogDust": "Alert for fog/dust/sandstorm",
       "weatherNotificationAutoDismiss": "Auto dismiss weather notifications",
+      "weatherForecastEnabled": "Enable weather forecast",
+      "weatherChangeNotify": "Notify on upcoming weather changes",
       "allScreens": "Shows breaks on all monitors",
       "monitorIdleTime": "Monitor system idle time (breaks are paused if system is idle).",
       "monitorDnd": "Show breaks even in Do Not Disturb mode",
@@ -557,6 +563,9 @@
   "weather": {
     "severeAlert": "Weather alert: {{alert}}, {{temp}}°C",
     "offWorkRain": "It's raining outside! Don't forget your umbrella.",
+    "changeAlert": "{{description}} expected {{time}} — be prepared!",
+    "within1Hour": "within 1 hour",
+    "inNHours": "in {{hours}} hours",
     "alerts": {
       "precipitation": "precipitation",
       "wind": "strong wind",

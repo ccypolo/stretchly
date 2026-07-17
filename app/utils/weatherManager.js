@@ -4,6 +4,8 @@ import log from 'electron-log/main.js'
 const WEATHER_REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes
 const IP_API_URL = 'http://ip-api.com/json/?fields=status,lat,lon,city'
 const OWM_CURRENT_URL = 'https://api.openweathermap.org/data/2.5/weather'
+const OWM_FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast'
+const FORECAST_HOURS = 6 // look ahead 6 hours
 
 // OpenWeatherMap weather condition ID ranges for severe weather detection
 // See: https://openweathermap.org/weather-conditions
@@ -41,6 +43,7 @@ class WeatherManager extends EventEmitter {
     this.alertTypes = settings.get('weatherAlertTypes')
 
     this.cachedWeather = null
+    this.cachedForecast = null
     this.cachedLocation = null
     this.lastFetchTime = null
     this.timer = null
@@ -48,6 +51,7 @@ class WeatherManager extends EventEmitter {
     this._lastAlertedConditions = new Set()
     this._offWorkAlertFiredToday = false
     this._offWorkAlertDate = null
+    this._lastForecastChangeAlert = null
 
     if (settings.get('weatherEnabled') && this.apiKey) {
       this.start()
@@ -155,6 +159,44 @@ class WeatherManager extends EventEmitter {
     }
   }
 
+  async fetchForecast () {
+    if (!this.apiKey) return null
+    const location = await this._getLocation()
+    if (!location) return null
+    const params = new URLSearchParams({ ...location, appid: this.apiKey, units: 'metric', lang: this.settings.get('language') || 'en', cnt: 8 })
+    try {
+      const res = await fetch(`${OWM_FORECAST_URL}?${params}`, { signal: AbortSignal.timeout(10000) })
+      if (!res.ok) {
+        log.error(`Stretchly: forecast API returned ${res.status}`)
+        return null
+      }
+      const data = await res.json()
+      const forecast = this._parseForecast(data)
+      this.cachedForecast = forecast
+      log.info(`Stretchly: forecast updated - ${forecast.length} entries`)
+      return forecast
+    } catch (e) {
+      log.error('Stretchly: forecast fetch failed:', e.message || e)
+      return null
+    }
+  }
+
+  _parseForecast (data) {
+    if (!data.list) return []
+    const now = Date.now()
+    const cutoff = now + FORECAST_HOURS * 60 * 60 * 1000
+    return data.list
+      .filter(item => item.dt * 1000 > now && item.dt * 1000 <= cutoff)
+      .map(item => ({
+        time: new Date(item.dt * 1000),
+        temp: Math.round(item.main.temp),
+        description: item.weather[0].description,
+        icon: item.weather[0].icon,
+        conditionId: item.weather[0].id,
+        pop: item.pop // probability of precipitation
+      }))
+  }
+
   get currentWeather () {
     return this.cachedWeather
   }
@@ -187,6 +229,54 @@ class WeatherManager extends EventEmitter {
       '50n': '\uD83C\uDF2B'
     }
     return map[icon] || ''
+  }
+
+  // Weather category from condition ID (for change detection)
+  _weatherCategory (conditionId) {
+    if (conditionId >= 200 && conditionId < 300) return 'thunderstorm'
+    if (conditionId >= 300 && conditionId < 400) return 'drizzle'
+    if (conditionId >= 500 && conditionId < 600) return 'rain'
+    if (conditionId >= 600 && conditionId < 700) return 'snow'
+    if (conditionId >= 700 && conditionId < 800) return 'fog'
+    if (conditionId === 800) return 'clear'
+    if (conditionId > 800 && conditionId < 900) return 'cloudy'
+    return 'other'
+  }
+
+  get forecastDisplayText () {
+    if (!this.cachedForecast || this.cachedForecast.length === 0) return null
+    // Show up to 3 upcoming forecast entries: "14:00 ☁ 17:00 🌧 20:00 🌧"
+    const entries = this.cachedForecast.slice(0, 3)
+    return entries.map(f => {
+      const hh = f.time.getHours().toString().padStart(2, '0')
+      const mm = f.time.getMinutes().toString().padStart(2, '0')
+      return `${hh}:${mm} ${this._weatherEmoji(f.icon)} ${f.temp}°C`
+    }).join('  ')
+  }
+
+  // Detect significant weather changes between current and forecast
+  detectWeatherChange () {
+    if (!this.cachedWeather || !this.cachedForecast || this.cachedForecast.length === 0) return null
+
+    const currentCategory = this._weatherCategory(this.cachedWeather.conditionId)
+
+    for (const f of this.cachedForecast) {
+      const forecastCategory = this._weatherCategory(f.conditionId)
+      if (forecastCategory !== currentCategory) {
+        // Only alert on significant changes (precipitation, snow, thunderstorm, fog)
+        const significantChanges = ['rain', 'drizzle', 'thunderstorm', 'snow', 'fog']
+        if (significantChanges.includes(forecastCategory) && !significantChanges.includes(currentCategory)) {
+          const hoursAhead = Math.round((f.time.getTime() - Date.now()) / (60 * 60 * 1000))
+          const changeKey = `${forecastCategory}-${hoursAhead}`
+          // Avoid repeating the same alert
+          if (changeKey !== this._lastForecastChangeAlert) {
+            this._lastForecastChangeAlert = changeKey
+            return { category: forecastCategory, hoursAhead, description: f.description, time: f.time }
+          }
+        }
+      }
+    }
+    return null
   }
 
   checkSevereWeather (weather) {
@@ -286,6 +376,24 @@ class WeatherManager extends EventEmitter {
       // Check off-work rain alert
       if (this.checkOffWorkRainAlert(weather)) {
         this.emit('offWorkRainAlert', weather)
+      }
+
+      // Fetch forecast if enabled
+      if (this.settings.get('weatherForecastEnabled')) {
+        const forecast = await this.fetchForecast()
+        if (!this._started) return
+
+        if (forecast) {
+          this.emit('forecastUpdated', forecast)
+
+          // Check weather change notification
+          if (this.settings.get('weatherChangeNotify')) {
+            const change = this.detectWeatherChange()
+            if (change) {
+              this.emit('weatherChangeAlert', change)
+            }
+          }
+        }
       }
     }
 

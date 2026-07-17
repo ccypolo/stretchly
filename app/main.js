@@ -22,6 +22,7 @@ import {
 import IdeasLoader from './utils/ideasLoader.js'
 import BreaksPlanner from './breaksPlanner.js'
 import AppIcon from './utils/appIcon.js'
+import { renderTrayIcon } from './utils/trayIconRenderer.js'
 import { UntilMorning } from './utils/untilMorning.js'
 import AutostartManager from './utils/autostartManager.js'
 import Command from './utils/commands.js'
@@ -100,7 +101,7 @@ let pausedForSuspendOrLock = false
 let nextIdea = null
 let danger = 0
 let updateChecker
-let currentTrayIconPath = null
+let currentTrayIconKey = null
 let currentTrayMenuTemplate = null
 let trayUpdateIntervalObj = null
 
@@ -444,6 +445,14 @@ async function initialize (isAppStart = true) {
     weatherManager.on('weatherUpdated', () => {
       updateTray()
     })
+    weatherManager.on('forecastUpdated', () => {
+      updateTray()
+    })
+    weatherManager.on('weatherChangeAlert', (change) => {
+      const hoursText = change.hoursAhead <= 1 ? i18next.t('weather.within1Hour') : i18next.t('weather.inNHours', { hours: change.hoursAhead })
+      showNotification(i18next.t('weather.changeAlert', { time: hoursText, description: change.description }), settings.get('weatherNotificationAutoDismiss'))
+      log.info(`Stretchly: weather change alert: ${change.category} in ${change.hoursAhead}h`)
+    })
   } else {
     weatherManager.updateSettings()
   }
@@ -594,9 +603,12 @@ function trayIconUseDarkColors () {
   return nativeTheme.shouldUseDarkColors
 }
 
-function trayIconPath () {
+async function trayIconImage () {
   const useDarkColors = trayIconUseDarkColors()
-  const params = {
+  const weatherIcon = (weatherManager && weatherManager.enabled && weatherManager.currentWeather)
+    ? weatherManager.currentWeather.icon
+    : null
+  const opts = {
     paused:
       breakPlanner.isPaused ||
       breakPlanner.dndManager.isOnDnd ||
@@ -609,11 +621,10 @@ function trayIconPath () {
     trayIconStyle: settings.get('trayIconStyle'),
     timeToBreak: minutesRemaining(breakPlanner.timeToNextBreak),
     percentage: breakPlanner.progressPercentage,
-    reference: breakPlanner.scheduler.reference
+    reference: breakPlanner.scheduler.reference,
+    weatherIcon
   }
-  const trayIconFileName = new AppIcon(params).trayIconFileName
-  const pathToTrayIcon = join(__dirname, '/images/app-icons/', trayIconFileName)
-  return pathToTrayIcon
+  return renderTrayIcon(opts)
 }
 
 function windowIconPath () {
@@ -1418,7 +1429,7 @@ function createIdeasEditorWindow (filePath, type) {
   })
 }
 
-function updateTray () {
+async function updateTray () {
   if (process.platform === 'darwin') {
     if (app.dock.isVisible) {
       app.dock.hide()
@@ -1431,7 +1442,8 @@ function updateTray () {
 
   if (settings.get('showTrayIcon')) {
     if (!appIcon) {
-      appIcon = new Tray(trayIconPath())
+      const initImage = await trayIconImage()
+      appIcon = new Tray(initImage)
       appIcon.on('double-click', () => {
         createPreferencesWindow()
       })
@@ -1445,10 +1457,11 @@ function updateTray () {
 
     updateToolTip()
 
-    const newTrayIconPath = trayIconPath()
-    if (newTrayIconPath !== currentTrayIconPath) {
-      appIcon.setImage(newTrayIconPath)
-      currentTrayIconPath = newTrayIconPath
+    const newImage = await trayIconImage()
+    const newKey = newImage.toDataURL()
+    if (newKey !== currentTrayIconKey) {
+      appIcon.setImage(newImage)
+      currentTrayIconKey = newKey
     }
 
     const newTrayMenuTemplate = getTrayMenuTemplate()
@@ -1468,7 +1481,15 @@ function getTrayMenuTemplate () {
     trayMenu.push({
       label: weatherManager.weatherDisplayText,
       enabled: false
-    }, {
+    })
+    // Forecast summary
+    if (weatherManager.forecastDisplayText) {
+      trayMenu.push({
+        label: weatherManager.forecastDisplayText,
+        enabled: false
+      })
+    }
+    trayMenu.push({
       type: 'separator'
     })
   }
@@ -1643,6 +1664,9 @@ function updateToolTip () {
   }
   if (weatherManager && weatherManager.enabled && weatherManager.weatherDisplayText) {
     trayMessage += '\n\n' + weatherManager.weatherDisplayText
+    if (weatherManager.forecastDisplayText) {
+      trayMessage += '\n' + weatherManager.forecastDisplayText
+    }
   }
   if (appIcon) {
     appIcon.setToolTip(trayMessage)
