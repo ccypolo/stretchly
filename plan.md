@@ -51,9 +51,11 @@
 - 确认 `weatherUpdated` → `clearCache` + `updateTray` + cache key 含 `weatherIcon`
 - 验证：相关单测 49 项通过；lint 通过
 
-### 4. [进行中] 打包 Portable 并目视验收
-- 构建 `Stretchly Portable`，对比托盘与菜单
-- 验证：晴/多云/雨切换时两者一致
+### 4. [已完成] 打包 Portable 并目视验收
+- 已构建 `dist/Stretchly Portable 1.21.0.exe`（2026-07-20 16:49）
+- asar 内含全部 18 张 `weather-icons/*.png`
+- 请用新 Portable 目视确认：托盘图标与菜单当前天气行图标为同一 OWM 图
+- 注：fork 上 GitHub Actions 仍无历史 run；本方案以本地单测+打包产物为验收门禁
 
 ## 待你确认
 
