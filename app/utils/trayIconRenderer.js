@@ -139,17 +139,31 @@ function _drawCloud (ctx, cx, cy, w, h) {
   ctx.fill()
 }
 
-function _drawRainDrops (ctx, cx, cy, w, count, color) {
-  ctx.save()
-  ctx.fillStyle = color
+// Pure layout helper (exported for tests). Must keep drops under the cloud
+// at tray sizes (16–32px); parentheses around the ternary are required.
+function rainDropPositions (cx, cy, w, count) {
+  const positions = []
+  const span = Math.max(count - 1, 1)
   for (let i = 0; i < count; i++) {
-    const x = cx - w * 0.25 + (i / (count - 1)) * w * 0.5
-    const y = cy + i % 2 === 0 ? 0 : w * 0.06
+    const x = cx - w * 0.25 + (i / span) * w * 0.5
+    const y = cy + (i % 2 === 0 ? 0 : w * 0.08)
+    positions.push({ x, y })
+  }
+  return positions
+}
+
+function _drawRainDrops (ctx, cx, cy, w, count, color) {
+  // Diagonal strokes stay visible at 16–32px tray icon sizes (tiny teardrops do not).
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.lineCap = 'round'
+  ctx.lineWidth = Math.max(2, w * 0.1)
+  const len = Math.max(3, w * 0.28)
+  for (const { x, y } of rainDropPositions(cx, cy, w, count)) {
     ctx.beginPath()
     ctx.moveTo(x, y)
-    ctx.quadraticCurveTo(x - w * 0.035, y + w * 0.08, x, y + w * 0.12)
-    ctx.quadraticCurveTo(x + w * 0.035, y + w * 0.08, x, y)
-    ctx.fill()
+    ctx.lineTo(x - len * 0.35, y + len)
+    ctx.stroke()
   }
   ctx.restore()
 }
@@ -544,4 +558,4 @@ function clearCache () {
   baseImageCache.clear()
 }
 
-export { renderTrayIcon, clearCache }
+export { renderTrayIcon, clearCache, rainDropPositions }
