@@ -15,4 +15,6 @@
 ### 1. [已完成] emoji→PNG 渲染工具 + 单测（`weatherEmoji.js`）
 ### 2. [已完成] 托盘天气模式改用 emoji 图（`renderWeatherBuffer` 优先 emoji）
 ### 3. [已完成] 右键菜单改用同一套 emoji 图（`weatherMenuNativeIcon`）
-### 4. [进行中] 打包 Portable 验收
+### 4. [已完成] 打包 Portable 验收
+- 已生成 `dist/Stretchly Portable 1.21.0.exe`
+- 请用户确认：托盘 / 右键 / 悬停均为同一套 emoji 语义
