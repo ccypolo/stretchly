@@ -1,7 +1,7 @@
 import {
   app, nativeTheme, BrowserWindow, Menu, ipcMain,
   screen, shell, dialog, globalShortcut, Tray,
-  powerMonitor
+  powerMonitor, nativeImage
 } from 'electron'
 import { EventEmitter } from 'node:events'
 import { readFile, writeFile, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
@@ -22,7 +22,7 @@ import {
 import IdeasLoader from './utils/ideasLoader.js'
 import BreaksPlanner from './breaksPlanner.js'
 import AppIcon from './utils/appIcon.js'
-import { renderTrayIcon } from './utils/trayIconRenderer.js'
+import { renderTrayIcon, clearCache } from './utils/trayIconRenderer.js'
 import { UntilMorning } from './utils/untilMorning.js'
 import AutostartManager from './utils/autostartManager.js'
 import Command from './utils/commands.js'
@@ -32,6 +32,7 @@ import StatusMessages from './utils/statusMessages.js'
 import DisplayManager from './utils/displayManager.js'
 import loadExternalIdeas from './utils/externalIdeasLoader.js'
 import WeatherManager from './utils/weatherManager.js'
+import { resolveWeatherPngPath } from './utils/owmIcons.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -443,6 +444,7 @@ async function initialize (isAppStart = true) {
       log.info('Stretchly: off-work rain alert')
     })
     weatherManager.on('weatherUpdated', () => {
+      clearCache()
       updateTray()
     })
     weatherManager.on('forecastUpdated', () => {
@@ -625,6 +627,33 @@ async function trayIconImage () {
     weatherIcon
   }
   return renderTrayIcon(opts)
+}
+
+// Synchronous key builder – used to decide whether the tray icon needs
+// to be re-rendered.  Avoids calling the async renderer or toDataURL()
+// on every 10-second tick.
+function trayIconCacheKey () {
+  const useDarkColors = trayIconUseDarkColors()
+  const weatherIcon = (weatherManager && weatherManager.enabled && weatherManager.currentWeather)
+    ? weatherManager.currentWeather.icon
+    : null
+  const paused =
+    breakPlanner.isPaused ||
+    breakPlanner.dndManager.isOnDnd ||
+    breakPlanner.naturalBreaksManager.isSchedulerCleared ||
+    breakPlanner.appExclusionsManager.isSchedulerCleared
+  return JSON.stringify({
+    paused,
+    monochrome: settings.get('useMonochromeTrayIcon'),
+    inverted: useDarkColors,
+    darkMode: useDarkColors,
+    platform: process.platform,
+    trayIconStyle: settings.get('trayIconStyle'),
+    timeToBreak: minutesRemaining(breakPlanner.timeToNextBreak),
+    percentage: breakPlanner.progressPercentage,
+    reference: breakPlanner.scheduler.reference,
+    weatherIcon
+  })
 }
 
 function windowIconPath () {
@@ -1457,9 +1486,9 @@ async function updateTray () {
 
     updateToolTip()
 
-    const newImage = await trayIconImage()
-    const newKey = newImage.toDataURL()
+    const newKey = trayIconCacheKey()
     if (newKey !== currentTrayIconKey) {
+      const newImage = await trayIconImage()
       appIcon.setImage(newImage)
       currentTrayIconKey = newKey
     }
@@ -1476,12 +1505,18 @@ async function updateTray () {
 function getTrayMenuTemplate () {
   const trayMenu = []
 
-  // Weather info at the top of the tray menu
-  if (weatherManager && weatherManager.enabled && weatherManager.weatherDisplayText) {
-    trayMenu.push({
-      label: weatherManager.weatherDisplayText,
+  // Weather info at the top of the tray menu (OWM icon matches tray icon)
+  if (weatherManager && weatherManager.enabled && weatherManager.weatherMenuLabel) {
+    const weatherItem = {
+      label: weatherManager.weatherMenuLabel,
       enabled: false
-    })
+    }
+    const iconCode = weatherManager.currentWeather && weatherManager.currentWeather.icon
+    const iconPath = resolveWeatherPngPath(iconCode)
+    if (iconPath) {
+      weatherItem.icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+    }
+    trayMenu.push(weatherItem)
     // Forecast summary
     if (weatherManager.forecastDisplayText) {
       trayMenu.push({

@@ -324,6 +324,20 @@ describe('weatherManager', function () {
       wm.weatherDisplayText.should.match(/26°C/)
       wm.weatherDisplayText.should.match(/light rain/)
     })
+
+    it('should format menu label without emoji (icon shown separately)', () => {
+      wm.cachedWeather = {
+        temp: 26,
+        description: 'light rain',
+        icon: '10d'
+      }
+      wm.weatherMenuLabel.should.equal('26°C light rain')
+      wm.weatherMenuLabel.should.not.match(/[\u2600-\u26FF\uD83C]/u)
+    })
+
+    it('should return null menu label when no weather data', () => {
+      should.not.exist(wm.weatherMenuLabel)
+    })
   })
 
   describe('_parseWeather', () => {

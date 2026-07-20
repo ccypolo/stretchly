@@ -207,6 +207,13 @@ class WeatherManager extends EventEmitter {
     return `${this._weatherEmoji(w.icon)} ${w.temp}°C ${w.description}`
   }
 
+  // Menu label without emoji – the OWM PNG is shown via MenuItem.icon instead.
+  get weatherMenuLabel () {
+    if (!this.cachedWeather) return null
+    const w = this.cachedWeather
+    return `${w.temp}°C ${w.description}`
+  }
+
   _weatherEmoji (icon) {
     const map = {
       '01d': '\u2600',

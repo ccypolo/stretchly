@@ -46,12 +46,12 @@
 - 验证：`test/owmIcons.js` + `test/trayIconRenderer.js` 通过；lint 通过
 - 注：GitHub Actions 在本 fork 仍无 workflow run；以本地单测为门禁
 
-### 3. [进行中] 菜单与托盘同源图标
-- `getTrayMenuTemplate` 当前天气项设置 `icon`，去掉 emoji
-- `weatherUpdated` 刷新链路确认
-- 验证：菜单图标与托盘为同一资源
+### 3. [已完成] 菜单与托盘同源图标
+- `weatherMenuLabel` 无 emoji；菜单 `MenuItem.icon` 用同一 OWM PNG
+- 确认 `weatherUpdated` → `clearCache` + `updateTray` + cache key 含 `weatherIcon`
+- 验证：相关单测 49 项通过；lint 通过
 
-### 4. [未开始] 打包 Portable 并目视验收
+### 4. [进行中] 打包 Portable 并目视验收
 - 构建 `Stretchly Portable`，对比托盘与菜单
 - 验证：晴/多云/雨切换时两者一致
 
