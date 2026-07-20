@@ -108,7 +108,8 @@
         "node_modules/windows-notification-state/**",
         "node_modules/macos-notification-state/**",
         "node_modules/@napi-rs/canvas/**",
-        "**/images/weather-icons/**"
+        "**/images/weather-icons/**",
+        "**/images/weather-emoji/**"
       ]
     },
     "portable": {

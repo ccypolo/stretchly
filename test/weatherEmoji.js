@@ -2,6 +2,7 @@ import 'chai/register-should'
 import {
   weatherEmojiForCode,
   renderWeatherEmojiPng,
+  readPackagedEmojiPng,
   WEATHER_EMOJI_BY_CODE
 } from '../app/utils/weatherEmoji.js'
 
@@ -18,12 +19,20 @@ describe('weatherEmoji', () => {
     Object.keys(WEATHER_EMOJI_BY_CODE).should.have.length(18)
   })
 
-  it('renders a non-empty png for common codes on this platform', () => {
-    const buf = renderWeatherEmojiPng(32, '10d')
-    if (!buf) {
-      // Font may be missing on some CI images; mapping still covered above.
-      return
+  it('has packaged emoji png assets for tray sizes', () => {
+    for (const code of Object.keys(WEATHER_EMOJI_BY_CODE)) {
+      const buf16 = readPackagedEmojiPng(code, 16)
+      const buf32 = readPackagedEmojiPng(code, 32)
+      Buffer.isBuffer(buf16).should.equal(true)
+      Buffer.isBuffer(buf32).should.equal(true)
+      buf16.length.should.be.above(100)
+      buf32.length.should.be.above(100)
     }
+  })
+
+  it('renders a non-empty png for common codes', () => {
+    const buf = renderWeatherEmojiPng(32, '10d')
+    should.exist(buf)
     Buffer.isBuffer(buf).should.equal(true)
     buf.length.should.be.above(200)
     buf[0].should.equal(0x89)

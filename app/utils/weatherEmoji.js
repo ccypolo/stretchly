@@ -1,6 +1,10 @@
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const PACKAGED_EMOJI_DIR = path.join(__dirname, '../images/weather-emoji')
 
 // Shared OWM icon-code → emoji map (used by tooltip text and tray/menu bitmaps).
 const WEATHER_EMOJI_BY_CODE = Object.freeze({
@@ -30,6 +34,35 @@ let emojiFontReady = false
 function weatherEmojiForCode (code) {
   if (typeof code !== 'string') return ''
   return WEATHER_EMOJI_BY_CODE[code] || ''
+}
+
+function packagedEmojiPath (code, size) {
+  if (!weatherEmojiForCode(code)) return null
+  return path.join(PACKAGED_EMOJI_DIR, `${code}@${size}.png`)
+}
+
+function readPackagedEmojiPng (code, size) {
+  const preferred = packagedEmojiPath(code, size)
+  if (preferred && existsSync(preferred)) {
+    try {
+      return readFileSync(preferred)
+    } catch {
+      // fall through
+    }
+  }
+  // Prefer nearest packaged size if exact size missing
+  for (const fallbackSize of [32, 16]) {
+    if (fallbackSize === size) continue
+    const p = packagedEmojiPath(code, fallbackSize)
+    if (p && existsSync(p)) {
+      try {
+        return readFileSync(p)
+      } catch {
+        // continue
+      }
+    }
+  }
+  return null
 }
 
 function candidateEmojiFontPaths () {
@@ -62,15 +95,8 @@ function ensureEmojiFont () {
   return false
 }
 
-/**
- * Rasterize weather emoji to a PNG buffer for tray/menu icons.
- * Returns null when code is unknown or font/render fails.
- */
-function renderWeatherEmojiPng (size, code) {
-  const emoji = weatherEmojiForCode(code)
-  if (!emoji) return null
+function renderEmojiWithFont (size, emoji) {
   if (!ensureEmojiFont()) return null
-
   try {
     const canvas = createCanvas(size, size)
     const ctx = canvas.getContext('2d')
@@ -79,7 +105,6 @@ function renderWeatherEmojiPng (size, code) {
     ctx.font = `${fontSize}px "${EMOJI_FONT_FAMILY}"`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    // Slight downward bias improves optical centering for most emoji glyphs.
     ctx.fillText(emoji, size / 2, size / 2 + size * 0.04)
     return canvas.toBuffer('image/png')
   } catch {
@@ -87,9 +112,24 @@ function renderWeatherEmojiPng (size, code) {
   }
 }
 
+/**
+ * Weather emoji PNG for tray/menu.
+ * Prefer packaged assets (reliable in Portable/asar); runtime font render is fallback.
+ */
+function renderWeatherEmojiPng (size, code) {
+  const emoji = weatherEmojiForCode(code)
+  if (!emoji) return null
+
+  const packaged = readPackagedEmojiPng(code, size)
+  if (packaged) return packaged
+
+  return renderEmojiWithFont(size, emoji)
+}
+
 export {
   WEATHER_EMOJI_BY_CODE,
   weatherEmojiForCode,
   renderWeatherEmojiPng,
-  ensureEmojiFont
+  ensureEmojiFont,
+  readPackagedEmojiPng
 }

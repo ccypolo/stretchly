@@ -9,6 +9,8 @@ const OWM_FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast'
 const FORECAST_HOURS = 12 // look ahead 12 hours (OWM steps are 3h)
 const FORECAST_FETCH_TIMEOUT_MS = 20000
 const FORECAST_FETCH_RETRIES = 2
+const WEATHER_FETCH_TIMEOUT_MS = 20000
+const WEATHER_FETCH_RETRIES = 2
 
 // OpenWeatherMap weather condition ID ranges for severe weather detection
 // See: https://openweathermap.org/weather-conditions
@@ -130,22 +132,27 @@ class WeatherManager extends EventEmitter {
     }
     const params = new URLSearchParams({ ...location, appid: this.apiKey, units: 'metric', lang: this.settings.get('language') || 'en' })
     log.info(`Stretchly: fetching weather at ${new Date().toISOString()}`)
-    try {
-      const res = await fetch(`${OWM_CURRENT_URL}?${params}`, { signal: AbortSignal.timeout(10000) })
-      if (!res.ok) {
-        log.error(`Stretchly: weather API returned ${res.status} at ${new Date().toISOString()}`)
-        return null
+    let lastError = null
+    for (let attempt = 1; attempt <= WEATHER_FETCH_RETRIES; attempt++) {
+      try {
+        const res = await fetch(`${OWM_CURRENT_URL}?${params}`, { signal: AbortSignal.timeout(WEATHER_FETCH_TIMEOUT_MS) })
+        if (!res.ok) {
+          log.error(`Stretchly: weather API returned ${res.status} at ${new Date().toISOString()}`)
+          return null
+        }
+        const data = await res.json()
+        this.cachedWeather = this._parseWeather(data)
+        this.lastFetchTime = Date.now()
+        log.info(`Stretchly: weather updated at ${new Date().toISOString()} - ${this.cachedWeather.city} ${this.cachedWeather.temp}°C ${this.cachedWeather.description} (wind ${this.cachedWeather.windSpeed}m/s, humidity ${this.cachedWeather.humidity}%)`)
+        this.emit('weatherUpdated', this.cachedWeather)
+        return this.cachedWeather
+      } catch (e) {
+        lastError = e
+        log.error(`Stretchly: weather fetch failed (attempt ${attempt}/${WEATHER_FETCH_RETRIES}) at ${new Date().toISOString()}:`, e.message || e)
       }
-      const data = await res.json()
-      this.cachedWeather = this._parseWeather(data)
-      this.lastFetchTime = Date.now()
-      log.info(`Stretchly: weather updated at ${new Date().toISOString()} - ${this.cachedWeather.city} ${this.cachedWeather.temp}°C ${this.cachedWeather.description} (wind ${this.cachedWeather.windSpeed}m/s, humidity ${this.cachedWeather.humidity}%)`)
-      this.emit('weatherUpdated', this.cachedWeather)
-      return this.cachedWeather
-    } catch (e) {
-      log.error(`Stretchly: weather fetch failed at ${new Date().toISOString()}:`, e.message || e)
-      return null
     }
+    log.error(`Stretchly: weather fetch failed at ${new Date().toISOString()}:`, lastError && (lastError.message || lastError))
+    return null
   }
 
   _parseWeather (data) {
