@@ -1715,10 +1715,10 @@ function updateToolTip () {
   if (message !== '') {
     trayMessage += '\n\n' + message
   }
-  if (weatherManager && weatherManager.enabled && weatherManager.weatherDisplayText) {
-    trayMessage += '\n\n' + weatherManager.weatherDisplayText
-    if (weatherManager.forecastDisplayText) {
-      trayMessage += '\n' + weatherManager.forecastDisplayText
+  if (weatherManager && weatherManager.enabled && weatherManager.weatherMenuLabel) {
+    trayMessage += '\n\n' + weatherManager.weatherMenuLabel
+    if (weatherManager.forecastTooltipText) {
+      trayMessage += '\n' + weatherManager.forecastTooltipText
     }
   }
   if (appIcon) {

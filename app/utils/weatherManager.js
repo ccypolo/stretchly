@@ -261,6 +261,17 @@ class WeatherManager extends EventEmitter {
     }).join('  ')
   }
 
+  // Tooltip cannot show OWM images; omit emoji so it matches menu text style.
+  get forecastTooltipText () {
+    if (!this.cachedForecast || this.cachedForecast.length === 0) return null
+    const entries = this.cachedForecast.slice(0, 3)
+    return entries.map(f => {
+      const hh = f.time.getHours().toString().padStart(2, '0')
+      const mm = f.time.getMinutes().toString().padStart(2, '0')
+      return `${hh}:${mm} ${f.temp}°C`
+    }).join('  ')
+  }
+
   // Detect significant weather changes between current and forecast
   detectWeatherChange () {
     if (!this.cachedWeather || !this.cachedForecast || this.cachedForecast.length === 0) return null

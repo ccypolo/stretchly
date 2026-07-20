@@ -340,6 +340,34 @@ describe('weatherManager', function () {
     })
   })
 
+  describe('forecastTooltipText', () => {
+    let wm
+    beforeEach(() => {
+      const settings = createMockSettings()
+      wm = new WeatherManager(settings)
+    })
+
+    afterEach(() => {
+      wm.stop()
+    })
+
+    it('should omit emoji from tooltip forecast text', () => {
+      const t1 = new Date('2026-07-20T14:00:00')
+      const t2 = new Date('2026-07-20T17:00:00')
+      wm.cachedForecast = [
+        { time: t1, temp: 28, icon: '04d', description: 'clouds', conditionId: 804, pop: 0.1 },
+        { time: t2, temp: 26, icon: '10d', description: 'rain', conditionId: 500, pop: 0.8 }
+      ]
+      wm.forecastTooltipText.should.equal('14:00 28°C  17:00 26°C')
+      wm.forecastTooltipText.should.not.match(/[\u2600-\u26FF\uD83C]/u)
+      wm.forecastDisplayText.should.match(/28°C/)
+    })
+
+    it('should return null when no forecast', () => {
+      should.not.exist(wm.forecastTooltipText)
+    })
+  })
+
   describe('_parseWeather', () => {
     it('should parse OpenWeatherMap response', () => {
       const settings = createMockSettings()
