@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -35,9 +36,17 @@ function owmIconPath (code) {
   return path.join(ICONS_DIR, fileName)
 }
 
+// Returns a filesystem path only when the packaged PNG exists.
+function resolveWeatherPngPath (code) {
+  const p = owmIconPath(code)
+  if (!p || !existsSync(p)) return null
+  return p
+}
+
 export {
   OWM_ICON_CODES,
   isValidOwmIconCode,
   owmIconFileName,
-  owmIconPath
+  owmIconPath,
+  resolveWeatherPngPath
 }

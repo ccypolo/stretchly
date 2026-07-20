@@ -4,7 +4,8 @@ import {
   OWM_ICON_CODES,
   isValidOwmIconCode,
   owmIconFileName,
-  owmIconPath
+  owmIconPath,
+  resolveWeatherPngPath
 } from '../app/utils/owmIcons.js'
 
 describe('owmIcons', () => {
@@ -44,5 +45,11 @@ describe('owmIcons', () => {
     for (const code of OWM_ICON_CODES) {
       existsSync(owmIconPath(code)).should.equal(true)
     }
+  })
+
+  it('resolveWeatherPngPath returns existing packaged files only', () => {
+    resolveWeatherPngPath('10d').should.equal(owmIconPath('10d'))
+    should.not.exist(resolveWeatherPngPath('bad'))
+    should.not.exist(resolveWeatherPngPath(null))
   })
 })

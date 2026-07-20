@@ -6,6 +6,7 @@ import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas'
 import { nativeImage } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveWeatherPngPath } from './owmIcons.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -349,9 +350,21 @@ async function renderProgress (baseName, foregroundName, size, percentage) {
   return canvas.toBuffer('image/png')
 }
 
+// Prefer packaged official OWM PNG; fall back to canvas drawing if missing.
+async function renderWeatherBuffer (size, iconCode, isDark) {
+  const pngPath = resolveWeatherPngPath(iconCode)
+  if (pngPath) {
+    const img = await loadImage(pngPath)
+    const { canvas, ctx } = newContext(size)
+    ctx.drawImage(img, 0, 0, size, size)
+    return canvas.toBuffer('image/png')
+  }
+  return renderWeather(size, iconCode, isDark)
+}
+
 // Weather icon + number text overlay
 async function renderWeatherWithText (size, iconCode, isDark, text, fontColor) {
-  const weatherBuf = renderWeather(size, iconCode, isDark)
+  const weatherBuf = await renderWeatherBuffer(size, iconCode, isDark)
   const weatherImage = await loadImage(weatherBuf)
   const { canvas, ctx } = newContext(size)
   ctx.globalAlpha = 0.85
@@ -363,7 +376,7 @@ async function renderWeatherWithText (size, iconCode, isDark, text, fontColor) {
 
 // Weather icon + progress fill
 async function renderWeatherWithProgress (size, iconCode, isDark, percentage) {
-  const weatherBuf = renderWeather(size, iconCode, isDark)
+  const weatherBuf = await renderWeatherBuffer(size, iconCode, isDark)
   const weatherImage = await loadImage(weatherBuf)
   const { canvas, ctx } = newContext(size)
   ctx.globalAlpha = 0.85
@@ -535,8 +548,8 @@ async function _renderWeatherOverlayBuf (size, iconCode, isDark, fontColor, over
   if (overlay === 'progress') {
     return renderWeatherWithProgress(size, iconCode, isDark, percentage)
   }
-  // Pure weather icon
-  return renderWeather(size, iconCode, isDark)
+  // Pure weather icon (official OWM PNG when available)
+  return renderWeatherBuffer(size, iconCode, isDark)
 }
 
 // ── macOS NativeImage helper ────────────────────────────────────────

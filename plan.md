@@ -41,12 +41,12 @@
 - TDD：路径解析、非法 code、文件存在性
 - 验证：`test/owmIcons.js` 6 项通过
 
-### 2. [未开始] 托盘改为使用 OWM 图标
-- `renderTrayIcon` 天气分支改用官方 PNG（可叠加 time/progress）
-- 保留非法/缺失时的回退
-- 验证：单测 + 本地看托盘图为 OWM 风格
+### 2. [已完成] 托盘改为使用 OWM 图标
+- `renderWeatherBuffer` 优先加载官方 PNG，缺失时回退 canvas
+- 验证：`test/owmIcons.js` + `test/trayIconRenderer.js` 通过；lint 通过
+- 注：GitHub Actions 在本 fork 仍无 workflow run；以本地单测为门禁
 
-### 3. [未开始] 菜单与托盘同源图标
+### 3. [进行中] 菜单与托盘同源图标
 - `getTrayMenuTemplate` 当前天气项设置 `icon`，去掉 emoji
 - `weatherUpdated` 刷新链路确认
 - 验证：菜单图标与托盘为同一资源
