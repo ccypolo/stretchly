@@ -4,6 +4,7 @@
 
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas'
 import { nativeImage } from 'electron'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readWeatherPngBuffer } from './owmIcons.js'
@@ -33,7 +34,9 @@ function newContext (size) {
 const baseImageCache = new Map()
 async function loadBase (name) {
   if (!baseImageCache.has(name)) {
-    baseImageCache.set(name, await loadImage(path.join(iconsDir, `${name}.png`)))
+    // Read via Buffer so packaged asar paths work with @napi-rs/canvas.
+    const buf = readFileSync(path.join(iconsDir, `${name}.png`))
+    baseImageCache.set(name, await loadImage(buf))
   }
   return baseImageCache.get(name)
 }

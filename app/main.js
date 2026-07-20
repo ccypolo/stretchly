@@ -1535,12 +1535,21 @@ function getTrayMenuTemplate () {
       weatherItem.icon = nativeImage.createFromBuffer(iconBuf).resize({ width: 16, height: 16 })
     }
     trayMenu.push(weatherItem)
-    // Forecast summary
-    if (weatherManager.forecastDisplayText) {
-      trayMenu.push({
-        label: weatherManager.forecastDisplayText,
-        enabled: false
-      })
+    // Forecast: one row per slot with the same OWM icon style as current weather
+    if (weatherManager.cachedForecast && weatherManager.cachedForecast.length > 0) {
+      for (const f of weatherManager.cachedForecast.slice(0, 3)) {
+        const hh = f.time.getHours().toString().padStart(2, '0')
+        const mm = f.time.getMinutes().toString().padStart(2, '0')
+        const forecastItem = {
+          label: `${hh}:${mm} ${f.temp}°C ${f.description || ''}`.trim(),
+          enabled: false
+        }
+        const fBuf = readWeatherPngBuffer(f.icon)
+        if (fBuf) {
+          forecastItem.icon = nativeImage.createFromBuffer(fBuf).resize({ width: 16, height: 16 })
+        }
+        trayMenu.push(forecastItem)
+      }
     }
     trayMenu.push({
       type: 'separator'
@@ -1715,10 +1724,11 @@ function updateToolTip () {
   if (message !== '') {
     trayMessage += '\n\n' + message
   }
-  if (weatherManager && weatherManager.enabled && weatherManager.weatherMenuLabel) {
-    trayMessage += '\n\n' + weatherManager.weatherMenuLabel
-    if (weatherManager.forecastTooltipText) {
-      trayMessage += '\n' + weatherManager.forecastTooltipText
+  if (weatherManager && weatherManager.enabled && weatherManager.weatherDisplayText) {
+    // Tooltip is text-only on Windows: emoji is the weather "icon" here.
+    trayMessage += '\n\n' + weatherManager.weatherDisplayText
+    if (weatherManager.forecastDisplayText) {
+      trayMessage += '\n' + weatherManager.forecastDisplayText
     }
   }
   if (appIcon) {

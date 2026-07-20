@@ -5,7 +5,9 @@ const WEATHER_REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes
 const IP_API_URL = 'http://ip-api.com/json/?fields=status,lat,lon,city'
 const OWM_CURRENT_URL = 'https://api.openweathermap.org/data/2.5/weather'
 const OWM_FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast'
-const FORECAST_HOURS = 6 // look ahead 6 hours
+const FORECAST_HOURS = 12 // look ahead 12 hours (OWM steps are 3h)
+const FORECAST_FETCH_TIMEOUT_MS = 20000
+const FORECAST_FETCH_RETRIES = 2
 
 // OpenWeatherMap weather condition ID ranges for severe weather detection
 // See: https://openweathermap.org/weather-conditions
@@ -164,21 +166,26 @@ class WeatherManager extends EventEmitter {
     const location = await this._getLocation()
     if (!location) return null
     const params = new URLSearchParams({ ...location, appid: this.apiKey, units: 'metric', lang: this.settings.get('language') || 'en', cnt: 8 })
-    try {
-      const res = await fetch(`${OWM_FORECAST_URL}?${params}`, { signal: AbortSignal.timeout(10000) })
-      if (!res.ok) {
-        log.error(`Stretchly: forecast API returned ${res.status}`)
-        return null
+    let lastError = null
+    for (let attempt = 1; attempt <= FORECAST_FETCH_RETRIES; attempt++) {
+      try {
+        const res = await fetch(`${OWM_FORECAST_URL}?${params}`, { signal: AbortSignal.timeout(FORECAST_FETCH_TIMEOUT_MS) })
+        if (!res.ok) {
+          log.error(`Stretchly: forecast API returned ${res.status}`)
+          return null
+        }
+        const data = await res.json()
+        const forecast = this._parseForecast(data)
+        this.cachedForecast = forecast
+        log.info(`Stretchly: forecast updated - ${forecast.length} entries`)
+        return forecast
+      } catch (e) {
+        lastError = e
+        log.error(`Stretchly: forecast fetch failed (attempt ${attempt}/${FORECAST_FETCH_RETRIES}):`, e.message || e)
       }
-      const data = await res.json()
-      const forecast = this._parseForecast(data)
-      this.cachedForecast = forecast
-      log.info(`Stretchly: forecast updated - ${forecast.length} entries`)
-      return forecast
-    } catch (e) {
-      log.error('Stretchly: forecast fetch failed:', e.message || e)
-      return null
     }
+    log.error('Stretchly: forecast fetch failed:', lastError && (lastError.message || lastError))
+    return null
   }
 
   _parseForecast (data) {
@@ -258,17 +265,6 @@ class WeatherManager extends EventEmitter {
       const hh = f.time.getHours().toString().padStart(2, '0')
       const mm = f.time.getMinutes().toString().padStart(2, '0')
       return `${hh}:${mm} ${this._weatherEmoji(f.icon)} ${f.temp}°C`
-    }).join('  ')
-  }
-
-  // Tooltip cannot show OWM images; omit emoji so it matches menu text style.
-  get forecastTooltipText () {
-    if (!this.cachedForecast || this.cachedForecast.length === 0) return null
-    const entries = this.cachedForecast.slice(0, 3)
-    return entries.map(f => {
-      const hh = f.time.getHours().toString().padStart(2, '0')
-      const mm = f.time.getMinutes().toString().padStart(2, '0')
-      return `${hh}:${mm} ${f.temp}°C`
     }).join('  ')
   }
 
