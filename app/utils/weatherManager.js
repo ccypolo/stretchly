@@ -1,5 +1,6 @@
 import EventEmitter from 'events'
 import log from 'electron-log/main.js'
+import { weatherEmojiForCode } from './weatherEmoji.js'
 
 const WEATHER_REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes
 const IP_API_URL = 'http://ip-api.com/json/?fields=status,lat,lon,city'
@@ -222,27 +223,7 @@ class WeatherManager extends EventEmitter {
   }
 
   _weatherEmoji (icon) {
-    const map = {
-      '01d': '\u2600',
-      '01n': '\uD83C\uDF19',
-      '02d': '\u26C5',
-      '02n': '\u2601',
-      '03d': '\u2601',
-      '03n': '\u2601',
-      '04d': '\u2601',
-      '04n': '\u2601',
-      '09d': '\uD83C\uDF27',
-      '09n': '\uD83C\uDF27',
-      '10d': '\uD83C\uDF26',
-      '10n': '\uD83C\uDF27',
-      '11d': '\u26C8',
-      '11n': '\u26C8',
-      '13d': '\u2744',
-      '13n': '\u2744',
-      '50d': '\uD83C\uDF2B',
-      '50n': '\uD83C\uDF2B'
-    }
-    return map[icon] || ''
+    return weatherEmojiForCode(icon)
   }
 
   // Weather category from condition ID (for change detection)

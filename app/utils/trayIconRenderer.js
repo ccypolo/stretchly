@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readWeatherPngBuffer } from './owmIcons.js'
+import { renderWeatherEmojiPng } from './weatherEmoji.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -353,10 +354,12 @@ async function renderProgress (baseName, foregroundName, size, percentage) {
   return canvas.toBuffer('image/png')
 }
 
-// Prefer packaged official OWM PNG; fall back to canvas drawing if missing.
-// IMPORTANT: load via Buffer (readFileSync), not filesystem path — @napi-rs/canvas
-// cannot open files inside Electron asar archives by path.
+// Prefer emoji raster for tray/menu consistency with tooltip text.
+// Fall back to packaged OWM PNG, then canvas line-art.
 async function renderWeatherBuffer (size, iconCode, isDark) {
+  const emojiBuf = renderWeatherEmojiPng(size, iconCode)
+  if (emojiBuf) return emojiBuf
+
   const pngBuf = readWeatherPngBuffer(iconCode)
   if (pngBuf) {
     try {

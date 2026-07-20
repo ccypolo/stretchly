@@ -33,6 +33,7 @@ import DisplayManager from './utils/displayManager.js'
 import loadExternalIdeas from './utils/externalIdeasLoader.js'
 import WeatherManager from './utils/weatherManager.js'
 import { readWeatherPngBuffer } from './utils/owmIcons.js'
+import { renderWeatherEmojiPng } from './utils/weatherEmoji.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -1520,22 +1521,34 @@ function trayMenuTemplateKey (template) {
   }))
 }
 
+function weatherMenuNativeIcon (iconCode, size = 16) {
+  const emojiBuf = renderWeatherEmojiPng(size, iconCode)
+  if (emojiBuf) {
+    return nativeImage.createFromBuffer(emojiBuf)
+  }
+  const owmBuf = readWeatherPngBuffer(iconCode)
+  if (owmBuf) {
+    return nativeImage.createFromBuffer(owmBuf).resize({ width: size, height: size })
+  }
+  return null
+}
+
 function getTrayMenuTemplate () {
   const trayMenu = []
 
-  // Weather info at the top of the tray menu (OWM icon matches tray icon)
+  // Weather info at the top of the tray menu (emoji icon matches tray + tooltip)
   if (weatherManager && weatherManager.enabled && weatherManager.weatherMenuLabel) {
     const weatherItem = {
       label: weatherManager.weatherMenuLabel,
       enabled: false
     }
     const iconCode = weatherManager.currentWeather && weatherManager.currentWeather.icon
-    const iconBuf = readWeatherPngBuffer(iconCode)
-    if (iconBuf) {
-      weatherItem.icon = nativeImage.createFromBuffer(iconBuf).resize({ width: 16, height: 16 })
+    const weatherIcon = weatherMenuNativeIcon(iconCode, 16)
+    if (weatherIcon) {
+      weatherItem.icon = weatherIcon
     }
     trayMenu.push(weatherItem)
-    // Forecast: one row per slot with the same OWM icon style as current weather
+    // Forecast: one row per slot with the same emoji icon style as current weather
     if (weatherManager.cachedForecast && weatherManager.cachedForecast.length > 0) {
       for (const f of weatherManager.cachedForecast.slice(0, 3)) {
         const hh = f.time.getHours().toString().padStart(2, '0')
@@ -1544,9 +1557,9 @@ function getTrayMenuTemplate () {
           label: `${hh}:${mm} ${f.temp}°C ${f.description || ''}`.trim(),
           enabled: false
         }
-        const fBuf = readWeatherPngBuffer(f.icon)
-        if (fBuf) {
-          forecastItem.icon = nativeImage.createFromBuffer(fBuf).resize({ width: 16, height: 16 })
+        const fIcon = weatherMenuNativeIcon(f.icon, 16)
+        if (fIcon) {
+          forecastItem.icon = fIcon
         }
         trayMenu.push(forecastItem)
       }
