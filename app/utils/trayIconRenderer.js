@@ -6,7 +6,7 @@ import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas'
 import { nativeImage } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { resolveWeatherPngPath } from './owmIcons.js'
+import { readWeatherPngBuffer } from './owmIcons.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -351,13 +351,19 @@ async function renderProgress (baseName, foregroundName, size, percentage) {
 }
 
 // Prefer packaged official OWM PNG; fall back to canvas drawing if missing.
+// IMPORTANT: load via Buffer (readFileSync), not filesystem path — @napi-rs/canvas
+// cannot open files inside Electron asar archives by path.
 async function renderWeatherBuffer (size, iconCode, isDark) {
-  const pngPath = resolveWeatherPngPath(iconCode)
-  if (pngPath) {
-    const img = await loadImage(pngPath)
-    const { canvas, ctx } = newContext(size)
-    ctx.drawImage(img, 0, 0, size, size)
-    return canvas.toBuffer('image/png')
+  const pngBuf = readWeatherPngBuffer(iconCode)
+  if (pngBuf) {
+    try {
+      const img = await loadImage(pngBuf)
+      const { canvas, ctx } = newContext(size)
+      ctx.drawImage(img, 0, 0, size, size)
+      return canvas.toBuffer('image/png')
+    } catch {
+      // fall through to canvas drawing
+    }
   }
   return renderWeather(size, iconCode, isDark)
 }

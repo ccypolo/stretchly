@@ -5,7 +5,8 @@ import {
   isValidOwmIconCode,
   owmIconFileName,
   owmIconPath,
-  resolveWeatherPngPath
+  resolveWeatherPngPath,
+  readWeatherPngBuffer
 } from '../app/utils/owmIcons.js'
 
 describe('owmIcons', () => {
@@ -51,5 +52,15 @@ describe('owmIcons', () => {
     resolveWeatherPngPath('10d').should.equal(owmIconPath('10d'))
     should.not.exist(resolveWeatherPngPath('bad'))
     should.not.exist(resolveWeatherPngPath(null))
+  })
+
+  it('readWeatherPngBuffer returns png bytes for valid codes', () => {
+    const buf = readWeatherPngBuffer('10d')
+    Buffer.isBuffer(buf).should.equal(true)
+    buf.length.should.be.above(100)
+    // PNG signature
+    buf[0].should.equal(0x89)
+    buf[1].should.equal(0x50)
+    should.not.exist(readWeatherPngBuffer('bad'))
   })
 })

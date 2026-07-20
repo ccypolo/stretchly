@@ -107,7 +107,8 @@
       "asarUnpack": [
         "node_modules/windows-notification-state/**",
         "node_modules/macos-notification-state/**",
-        "node_modules/@napi-rs/canvas/**"
+        "node_modules/@napi-rs/canvas/**",
+        "**/images/weather-icons/**"
       ]
     },
     "portable": {

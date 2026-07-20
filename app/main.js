@@ -32,7 +32,7 @@ import StatusMessages from './utils/statusMessages.js'
 import DisplayManager from './utils/displayManager.js'
 import loadExternalIdeas from './utils/externalIdeasLoader.js'
 import WeatherManager from './utils/weatherManager.js'
-import { resolveWeatherPngPath } from './utils/owmIcons.js'
+import { readWeatherPngBuffer } from './utils/owmIcons.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -1459,6 +1459,14 @@ function createIdeasEditorWindow (filePath, type) {
 }
 
 async function updateTray () {
+  try {
+    await updateTrayImpl()
+  } catch (error) {
+    log.error('Stretchly: updateTray failed:', formatError(error))
+  }
+}
+
+async function updateTrayImpl () {
   if (process.platform === 'darwin') {
     if (app.dock.isVisible) {
       app.dock.hide()
@@ -1494,12 +1502,22 @@ async function updateTray () {
     }
 
     const newTrayMenuTemplate = getTrayMenuTemplate()
-    if (JSON.stringify(newTrayMenuTemplate) !== JSON.stringify(currentTrayMenuTemplate)) {
+    if (trayMenuTemplateKey(newTrayMenuTemplate) !== trayMenuTemplateKey(currentTrayMenuTemplate)) {
       const trayMenu = Menu.buildFromTemplate(newTrayMenuTemplate)
       appIcon.setContextMenu(trayMenu)
       currentTrayMenuTemplate = newTrayMenuTemplate
     }
   }
+}
+
+// Avoid JSON.stringify on NativeImage (can throw / is unstable).
+function trayMenuTemplateKey (template) {
+  if (!template) return ''
+  return JSON.stringify(template.map(item => {
+    if (!item || typeof item !== 'object') return item
+    const { icon, ...rest } = item
+    return icon ? { ...rest, icon: true } : rest
+  }))
 }
 
 function getTrayMenuTemplate () {
@@ -1512,9 +1530,9 @@ function getTrayMenuTemplate () {
       enabled: false
     }
     const iconCode = weatherManager.currentWeather && weatherManager.currentWeather.icon
-    const iconPath = resolveWeatherPngPath(iconCode)
-    if (iconPath) {
-      weatherItem.icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+    const iconBuf = readWeatherPngBuffer(iconCode)
+    if (iconBuf) {
+      weatherItem.icon = nativeImage.createFromBuffer(iconBuf).resize({ width: 16, height: 16 })
     }
     trayMenu.push(weatherItem)
     // Forecast summary

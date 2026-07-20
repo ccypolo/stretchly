@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -43,10 +43,23 @@ function resolveWeatherPngPath (code) {
   return p
 }
 
+// Read PNG bytes via Node/Electron fs (works inside asar). Prefer this over
+// passing asar paths into native loaders like @napi-rs/canvas loadImage(path).
+function readWeatherPngBuffer (code) {
+  const p = resolveWeatherPngPath(code)
+  if (!p) return null
+  try {
+    return readFileSync(p)
+  } catch {
+    return null
+  }
+}
+
 export {
   OWM_ICON_CODES,
   isValidOwmIconCode,
   owmIconFileName,
   owmIconPath,
-  resolveWeatherPngPath
+  resolveWeatherPngPath,
+  readWeatherPngBuffer
 }

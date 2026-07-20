@@ -1,64 +1,23 @@
-# 官方 OWM 图标统一方案 Plan
+# 托盘图标不可见修复 Plan
 
-## 需求（待确认 BDD）
+## 现象
+启用天气后运行 Portable，托盘图标完全看不到。日志有 weather updated，无显式 tray 错误；`showTrayIcon: true`。
 
-**Given** 天气已启用且拿到当前天气 icon code（如 `10d`）  
-**When** 查看系统托盘图标与托盘弹出菜单中的当前天气行  
-**Then** 两边使用**同一份** OpenWeatherMap 官方图标资源（同一 `icon` → 同一 PNG），视觉一致（菜单行带该图标，托盘图标也是该图）
+## 根因（待验证修复）
+1. `trayIconRenderer` 用 `@napi-rs/canvas` `loadImage(asar文件路径)` 加载 OWM PNG；原生加载不走 Electron asar 虚拟 FS，天气到达后 `trayIconImage()` 抛错 → `updateTray` 失败 → 托盘未创建或未更新
+2. `getTrayMenuTemplate` 含 `NativeImage` 后 `JSON.stringify` 可能抛错/异常，进一步打断 `updateTray`
+3. `updateTray` 无 try/catch，失败时日志不明显
 
-**Given** 天气为晴朗 / 多云 / 下雨等不同 code  
-**When** 天气切换  
-**Then** 托盘图标与菜单图标同步切换为对应 OWM 图
+## BDD
+**Given** 天气已启用且图标在 asar 内  
+**When** 启动应用并完成天气刷新  
+**Then** 系统托盘始终可见，且显示 OWM 天气图（或安全回退到 canvas 天气图）
 
-**Given** 本地缺少某个 icon 文件或加载失败  
-**When** 渲染托盘/菜单  
-**Then** 回退到现有 canvas/emoji 行为，不崩溃
-
-**Given** 托盘样式为 time/progress  
-**When** 天气启用  
-**Then** 仍以 OWM 图标为底，叠加数字/进度（与现逻辑一致）
-
-## 方案要点（推荐）
-
-1. **本地打包官方图标**（不每次联网拉 CDN）  
-   - 路径：`app/images/weather-icons/{code}.png`（及可选 `@2x`）  
-   - URL 来源规范：`https://openweathermap.org/img/wn/{code}@2x.png`  
-   - 覆盖 `01d/01n` … `50d/50n` 共 18 张
-2. **托盘**：`trayIconRenderer` 天气模式改为加载上述 PNG，不再用手绘天气符号作为主图
-3. **弹出菜单**：当前天气 `MenuItem` 设置 `icon: NativeImage`（同源文件），文案去掉 emoji，仅保留温度与描述  
-4. **缓存**：按 icon code 缓存 NativeImage；`weatherUpdated` 时刷新托盘与菜单
-
-## 不在本次范围
-
-- 不做独立 BrowserWindow 天气弹窗（除非你明确要求）
-- 预报摘要行仍可用文字/emoji（系统菜单每行仅一个 icon，优先保证「当前天气」与托盘一致）
+**Given** OWM PNG 加载失败  
+**When** 渲染托盘  
+**Then** 回退 canvas，不导致托盘消失
 
 ## 步骤
-
-### 1. [已完成] 引入 OWM 图标资源与加载工具
-- 下载并纳入 `app/images/weather-icons/`（18 张 `@2x` PNG）
-- 实现 `owmIconPath(code)` / `isValidOwmIconCode` 等
-- TDD：路径解析、非法 code、文件存在性
-- 验证：`test/owmIcons.js` 6 项通过
-
-### 2. [已完成] 托盘改为使用 OWM 图标
-- `renderWeatherBuffer` 优先加载官方 PNG，缺失时回退 canvas
-- 验证：`test/owmIcons.js` + `test/trayIconRenderer.js` 通过；lint 通过
-- 注：GitHub Actions 在本 fork 仍无 workflow run；以本地单测为门禁
-
-### 3. [已完成] 菜单与托盘同源图标
-- `weatherMenuLabel` 无 emoji；菜单 `MenuItem.icon` 用同一 OWM PNG
-- 确认 `weatherUpdated` → `clearCache` + `updateTray` + cache key 含 `weatherIcon`
-- 验证：相关单测 49 项通过；lint 通过
-
-### 4. [已完成] 打包 Portable 并目视验收
-- 已构建 `dist/Stretchly Portable 1.21.0.exe`（2026-07-20 16:49）
-- asar 内含全部 18 张 `weather-icons/*.png`
-- 请用新 Portable 目视确认：托盘图标与菜单当前天气行图标为同一 OWM 图
-- 注：fork 上 GitHub Actions 仍无历史 run；本方案以本地单测+打包产物为验收门禁
-
-## 待你确认
-
-1. BDD / 步骤是否按上面执行？  
-2. 弹出菜单是否接受 **系统菜单 + MenuItem.icon**（不做独立小窗口）？  
-3. 图标是否同意 **本地打包**（推荐），而不是运行时从 openweathermap.org 拉取？
+### 1. [已完成] 修复 OWM 图标加载（readFileSync→Buffer→loadImage）+ 回退 + updateTray 容错
+### 2. [已完成] 菜单模板比较不再 JSON.stringify NativeImage
+### 3. [进行中] 本地验证并重打包 Portable
