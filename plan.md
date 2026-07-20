@@ -20,4 +20,7 @@
 ## 步骤
 ### 1. [已完成] 修复 OWM 图标加载（readFileSync→Buffer→loadImage）+ 回退 + updateTray 容错
 ### 2. [已完成] 菜单模板比较不再 JSON.stringify NativeImage
-### 3. [进行中] 本地验证并重打包 Portable
+### 3. [已完成] 本地验证并重打包 Portable
+- 已重打包 `dist/Stretchly Portable 1.21.0.exe`
+- weather-icons 已 asarUnpack；图标经 Buffer 加载
+- 请用户重启 Portable 确认托盘可见
