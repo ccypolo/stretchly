@@ -424,9 +424,10 @@ window.onload = async (e) => {
     const statusEl = document.querySelector('#weatherLocationStatus')
     const resultsEl = document.querySelector('#weatherLocationResults')
     const searchBtn = document.querySelector('#weatherLocationSearch')
+    const ipBtn = document.querySelector('#weatherLocationByIp')
     const clearBtn = document.querySelector('#weatherLocationClear')
     const cityInput = document.querySelector('#weatherCity')
-    if (!selectedWrap || !selectedName || !statusEl || !resultsEl || !searchBtn || !clearBtn || !cityInput) {
+    if (!selectedWrap || !selectedName || !statusEl || !resultsEl || !searchBtn || !ipBtn || !clearBtn || !cityInput) {
       return
     }
 
@@ -447,6 +448,19 @@ window.onload = async (e) => {
       statusEl.textContent = key ? await window.i18next.t(key) : ''
     }
 
+    const applySelectedLocation = (displayName, lat, lon) => {
+      settings.weatherLocationName = displayName
+      settings.weatherLat = lat
+      settings.weatherLon = lon
+      window.settings.saveSettings('weatherLocationName', displayName)
+      window.settings.saveSettings('weatherLat', lat)
+      window.settings.saveSettings('weatherLon', lon)
+      resultsEl.innerHTML = ''
+      resultsEl.classList.add('hidden')
+      statusEl.textContent = ''
+      refreshSelected()
+    }
+
     const renderResults = (locations) => {
       resultsEl.innerHTML = ''
       if (!locations || locations.length === 0) {
@@ -459,16 +473,7 @@ window.onload = async (e) => {
         btn.type = 'button'
         btn.textContent = loc.displayName
         btn.onclick = () => {
-          settings.weatherLocationName = loc.displayName
-          settings.weatherLat = loc.lat
-          settings.weatherLon = loc.lon
-          window.settings.saveSettings('weatherLocationName', loc.displayName)
-          window.settings.saveSettings('weatherLat', loc.lat)
-          window.settings.saveSettings('weatherLon', loc.lon)
-          resultsEl.innerHTML = ''
-          resultsEl.classList.add('hidden')
-          statusEl.textContent = ''
-          refreshSelected()
+          applySelectedLocation(loc.displayName, loc.lat, loc.lon)
         }
         resultsEl.appendChild(btn)
       }
@@ -504,6 +509,21 @@ window.onload = async (e) => {
         } catch (e) {
           await setStatus('preferences.settings.weatherLocationError')
           renderResults([])
+        }
+      }
+
+      ipBtn.onclick = async () => {
+        await setStatus('preferences.settings.weatherLocationLocatingIp')
+        resultsEl.classList.add('hidden')
+        try {
+          const loc = await window.stretchly.locateWeatherByIp()
+          if (!loc || !loc.lat || !loc.lon) {
+            await setStatus('preferences.settings.weatherLocationIpError')
+            return
+          }
+          applySelectedLocation(loc.displayName || loc.city || `${loc.lat}, ${loc.lon}`, loc.lat, loc.lon)
+        } catch (e) {
+          await setStatus('preferences.settings.weatherLocationIpError')
         }
       }
 

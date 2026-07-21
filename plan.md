@@ -1,19 +1,14 @@
-# Geocoding 选区功能 Plan
+# IP 定位设为天气选区 Plan
 
 ## 需求（已确认）
-广州等大城市用城市名查询太粗。支持搜索区/镇/地标，选中后用坐标查天气。
-已选坐标优先于城市名。
+设置页增加「使用 IP 定位」：用 IP 得到 lat/lon（及城市名），写入当前已选区域，之后按坐标查天气。
 
 ## BDD
-1. Given 已填 API Key，输入地点并搜索 → 展示候选列表
-2. Given 选中候选 → 保存 name/lat/lon，天气按坐标查询
-3. Given 已保存坐标 → `_getLocation` 坐标优先
-4. Given 搜索失败/无结果 → 不崩溃、不覆盖已有坐标
+1. Given 天气设置页，When 点击「使用 IP 定位」且成功，Then 保存 weatherLat/Lon/LocationName，界面显示已选区域
+2. Given IP 定位失败，When 点击按钮，Then 显示错误提示，不覆盖已有有效选区
+3. Given 已用 IP 设好坐标，When 拉取天气，Then `_getLocation` 使用该坐标（与搜索选区同一优先级）
 
 ## 步骤
-### 1. [已完成] weatherManager：Geocoding API + 坐标优先定位 + 单测
-### 2. [已完成] 设置项 defaultSettings + IPC 搜索接口
-### 3. [已完成] 偏好页 UI（搜索/候选/当前选区）+ i18n（en/zh-CN）
-### 4. [已完成] 本地验证 + 打包 Portable
-- 已生成 `dist/Stretchly Portable 1.21.0.exe`
-- 用法：设置 → 天气 → 输入「天河」或「广州天河」→ 搜索 → 点选候选 → 看「已选区域」
+### 1. [已完成] weatherManager 暴露 locateByIp 公共方法 + 单测/整理
+### 2. [已完成] IPC + 偏好页按钮/文案（en/zh-CN）
+### 3. [进行中] 验证 + 打包 Portable

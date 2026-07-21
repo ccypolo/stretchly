@@ -99,7 +99,8 @@ function exposeStretchly () {
     showDebug: () => ipcRenderer.invoke('show-debug'),
     updateTray: () => ipcRenderer.send('update-tray'),
     getWeather: () => ipcRenderer.invoke('get-weather'),
-    searchWeatherLocations: (query) => ipcRenderer.invoke('weather-geocode-search', query)
+    searchWeatherLocations: (query) => ipcRenderer.invoke('weather-geocode-search', query),
+    locateWeatherByIp: () => ipcRenderer.invoke('weather-locate-by-ip')
   })
 }
 

@@ -518,4 +518,18 @@ describe('weatherManager location resolution', () => {
     parsed[0].lon.should.equal(113.3612)
     wm.stop()
   })
+
+  it('locateByIp returns null-safe public API shape when fetch fails', async () => {
+    const settings = createMockSettings()
+    const wm = new WeatherManager(settings)
+    const originalFetch = global.fetch
+    global.fetch = vi.fn(async () => { throw new Error('network down') })
+    try {
+      const loc = await wm.locateByIp()
+      should.not.exist(loc)
+    } finally {
+      global.fetch = originalFetch
+      wm.stop()
+    }
+  })
 })

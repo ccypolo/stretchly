@@ -3,7 +3,7 @@ import log from 'electron-log/main.js'
 import { weatherEmojiForCode } from './weatherEmoji.js'
 
 const WEATHER_REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes
-const IP_API_URL = 'http://ip-api.com/json/?fields=status,lat,lon,city'
+const IP_API_URL = 'http://ip-api.com/json/?fields=status,message,lat,lon,city,regionName,country'
 const OWM_CURRENT_URL = 'https://api.openweathermap.org/data/2.5/weather'
 const OWM_FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast'
 const OWM_GEOCODE_URL = 'https://api.openweathermap.org/geo/1.0/direct'
@@ -104,12 +104,31 @@ class WeatherManager extends EventEmitter {
         log.error('Stretchly: IP location API returned fail status')
         return null
       }
-      this.cachedLocation = { lat: data.lat, lon: data.lon, city: data.city }
+      const lat = Number(data.lat)
+      const lon = Number(data.lon)
+      if (!isValidWeatherCoordinate(lat) || !isValidWeatherCoordinate(lon)) {
+        log.error('Stretchly: IP location returned invalid coordinates')
+        return null
+      }
+      const displayParts = [data.city, data.regionName, data.country].filter(Boolean)
+      this.cachedLocation = {
+        lat,
+        lon,
+        city: data.city || '',
+        regionName: data.regionName || '',
+        country: data.country || '',
+        displayName: displayParts.join(', ') || `${lat.toFixed(4)}, ${lon.toFixed(4)}`
+      }
       return this.cachedLocation
     } catch (e) {
       log.error('Stretchly: IP location lookup failed:', e.message || e)
       return null
     }
+  }
+
+  // Public wrapper for preferences "Use IP location".
+  async locateByIp () {
+    return this._locateByIp()
   }
 
   async _getLocation () {
