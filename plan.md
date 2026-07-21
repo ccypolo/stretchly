@@ -34,8 +34,8 @@
 
 ## 步骤
 ### 1. [已完成] weatherManager：Geocoding API + 坐标优先定位 + 单测
-### 2. [进行中] 设置项 defaultSettings + IPC 搜索接口
-### 3. [未开始] 偏好页 UI（搜索/候选/当前选区）+ i18n（en/zh-CN）
+### 2. [已完成] 设置项 defaultSettings + IPC 搜索接口
+### 3. [进行中] 偏好页 UI（搜索/候选/当前选区）+ i18n（en/zh-CN）
 ### 4. [未开始] 本地验证 + 打包 Portable
 
 ## 请确认

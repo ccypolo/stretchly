@@ -98,7 +98,8 @@ function exposeStretchly () {
     playSound: (name) => ipcRenderer.send('play-sound', name),
     showDebug: () => ipcRenderer.invoke('show-debug'),
     updateTray: () => ipcRenderer.send('update-tray'),
-    getWeather: () => ipcRenderer.invoke('get-weather')
+    getWeather: () => ipcRenderer.invoke('get-weather'),
+    searchWeatherLocations: (query) => ipcRenderer.invoke('weather-geocode-search', query)
   })
 }
 

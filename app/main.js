@@ -1887,6 +1887,11 @@ ipcMain.handle('get-weather', () => {
   return weatherManager.currentWeather
 })
 
+ipcMain.handle('weather-geocode-search', async (_event, query) => {
+  if (!weatherManager) return []
+  return weatherManager.searchLocations(query)
+})
+
 ipcMain.handle('show-debug', (event) => {
   const reference = breakPlanner.scheduler.reference
   const timeleft = formatTimeRemaining(

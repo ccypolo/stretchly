@@ -93,6 +93,9 @@ export default {
   weatherEnabled: false,
   weatherApiKey: '',
   weatherCity: '',
+  weatherLat: null,
+  weatherLon: null,
+  weatherLocationName: '',
   weatherOffWorkTime: '17:30',
   weatherWorkdays: [1, 2, 3, 4, 5],
   weatherAlertTypes: {
