@@ -11,4 +11,4 @@
 ## 步骤
 ### 1. [已完成] weatherManager 暴露 locateByIp 公共方法 + 单测/整理
 ### 2. [已完成] IPC + 偏好页按钮/文案（en/zh-CN）
-### 3. [进行中] 验证 + 打包 Portable
+### 3. [已完成] 验证 + 打包 Portable
