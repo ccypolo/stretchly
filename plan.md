@@ -1,20 +1,43 @@
-# 方案 1：托盘/菜单改用 emoji 图 Plan
+# Geocoding 选区功能 Plan
 
-## 需求（已确认）
-- 托盘图标、右键菜单图标：emoji 栅格化位图（同源）
-- 悬停 tooltip：继续 emoji 文字
-- 渲染优先运行时 canvas（Segoe UI Emoji）；失败回退 OWM PNG → 手绘
-- OWM 官方 PNG 暂保留作回退
+## 需求（待确认）
+广州等大城市用城市名查询太粗。支持搜索区/镇/地标，选中后用坐标查天气。
 
-## BDD
-1. Given icon=`10d`，When 看托盘/菜单/悬停，Then 均为雨类 emoji 语义且一致
-2. Given emoji 渲染失败，When 更新托盘，Then 回退且托盘不消失
-3. Given trayIconStyle=time，When 天气启用，Then emoji 底图 + 分钟角标仍可读
+## BDD（已草案）
+1. **Given** 已填 API Key，输入「广州天河」并点搜索  
+   **When** Geocoding 返回候选  
+   **Then** 列表展示名称 + 大致位置（国家/州），可选中一项
+
+2. **Given** 选中某候选  
+   **When** 保存设置  
+   **Then** 写入 `weatherLocationName`、`weatherLat`、`weatherLon`；后续天气/预报用 lat/lon 查询
+
+3. **Given** 已保存坐标  
+   **When** `_getLocation`  
+   **Then** 坐标优先于城市名字符串；清空选区后回退城市名 → 旧 pos → IP
+
+4. **Given** 搜索无结果或 API 失败  
+   **When** 展示错误/空状态  
+   **Then** 不崩溃，不覆盖已有有效坐标
+
+## 方案要点
+- OWM Geocoding：`/geo/1.0/direct?q=...&limit=5&appid=...`
+- 新设置：`weatherLat`、`weatherLon`、`weatherLocationName`（显示用）
+- 设置页：城市输入 +「搜索」按钮 + 候选列表；显示当前选中区域
+- `weatherManager._getLocation`：有有效 lat/lon 则 `{ lat, lon }`，否则沿用现逻辑
+- IPC：`weather-geocode-search(query)` 主进程代理请求（密钥不进渲染层明文以外的新暴露面；沿用已有 key）
+
+## 不在本次范围
+- 地图点选
+- 系统 GPS 精定位（可后续加）
+- 删除 `weatherCity` 字段（保留作搜索关键词/兼容）
 
 ## 步骤
-### 1. [已完成] emoji→PNG 渲染工具 + 单测（`weatherEmoji.js`）
-### 2. [已完成] 托盘天气模式改用 emoji 图（`renderWeatherBuffer` 优先 emoji）
-### 3. [已完成] 右键菜单改用同一套 emoji 图（`weatherMenuNativeIcon`）
-### 4. [已完成] 打包 Portable 验收
-- 已生成 `dist/Stretchly Portable 1.21.0.exe`
-- 请用户确认：托盘 / 右键 / 悬停均为同一套 emoji 语义
+### 1. [已完成] weatherManager：Geocoding API + 坐标优先定位 + 单测
+### 2. [进行中] 设置项 defaultSettings + IPC 搜索接口
+### 3. [未开始] 偏好页 UI（搜索/候选/当前选区）+ i18n（en/zh-CN）
+### 4. [未开始] 本地验证 + 打包 Portable
+
+## 请确认
+1. BDD / 步骤是否按上面执行？  
+2. 坐标与城市名冲突时：**已选坐标优先**（推荐）可以吗？

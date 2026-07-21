@@ -6,11 +6,14 @@ const WEATHER_REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes
 const IP_API_URL = 'http://ip-api.com/json/?fields=status,lat,lon,city'
 const OWM_CURRENT_URL = 'https://api.openweathermap.org/data/2.5/weather'
 const OWM_FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast'
+const OWM_GEOCODE_URL = 'https://api.openweathermap.org/geo/1.0/direct'
 const FORECAST_HOURS = 12 // look ahead 12 hours (OWM steps are 3h)
 const FORECAST_FETCH_TIMEOUT_MS = 20000
 const FORECAST_FETCH_RETRIES = 2
 const WEATHER_FETCH_TIMEOUT_MS = 20000
 const WEATHER_FETCH_RETRIES = 2
+const GEOCODE_FETCH_TIMEOUT_MS = 15000
+const GEOCODE_RESULT_LIMIT = 5
 
 // OpenWeatherMap weather condition ID ranges for severe weather detection
 // See: https://openweathermap.org/weather-conditions
@@ -36,6 +39,10 @@ function range (start, end) {
   return Array.from({ length: end - start }, (_, i) => start + i)
 }
 
+function isValidWeatherCoordinate (value) {
+  return typeof value === 'number' && Number.isFinite(value) && value !== 0
+}
+
 class WeatherManager extends EventEmitter {
   constructor (settings) {
     super()
@@ -43,6 +50,9 @@ class WeatherManager extends EventEmitter {
     this.enabled = false
     this.apiKey = settings.get('weatherApiKey')
     this.city = settings.get('weatherCity')
+    this.weatherLat = settings.get('weatherLat')
+    this.weatherLon = settings.get('weatherLon')
+    this.weatherLocationName = settings.get('weatherLocationName') || ''
     this.offWorkTime = settings.get('weatherOffWorkTime')
     this.workdays = settings.get('weatherWorkdays')
     this.alertTypes = settings.get('weatherAlertTypes')
@@ -103,10 +113,14 @@ class WeatherManager extends EventEmitter {
   }
 
   async _getLocation () {
+    // Selected geocoded point wins over free-text city name.
+    if (isValidWeatherCoordinate(this.weatherLat) && isValidWeatherCoordinate(this.weatherLon)) {
+      return { lat: this.weatherLat, lon: this.weatherLon }
+    }
     if (this.city) {
       return { q: this.city }
     }
-    // Use saved coordinates if available
+    // Use saved coordinates if available (sunrise/legacy settings)
     const savedLat = this.settings.get('posLatitude')
     const savedLon = this.settings.get('posLongitude')
     if (savedLat && savedLon && savedLat !== 0.0 && savedLon !== 0.0) {
@@ -118,6 +132,56 @@ class WeatherManager extends EventEmitter {
       return { lat: loc.lat, lon: loc.lon }
     }
     return null
+  }
+
+  _parseGeocodeResults (results) {
+    if (!Array.isArray(results)) return []
+    return results
+      .filter(item => item && isValidWeatherCoordinate(Number(item.lat)) && isValidWeatherCoordinate(Number(item.lon)))
+      .map(item => {
+        const name = item.name || ''
+        const state = item.state || ''
+        const country = item.country || ''
+        const localName = item.local_names && (item.local_names.zh || item.local_names['zh-CN'])
+        const displayParts = [localName || name, state, country].filter(Boolean)
+        return {
+          name,
+          localName: localName || '',
+          state,
+          country,
+          lat: Number(item.lat),
+          lon: Number(item.lon),
+          displayName: displayParts.join(', ')
+        }
+      })
+  }
+
+  async searchLocations (query) {
+    const q = typeof query === 'string' ? query.trim() : ''
+    if (!q) return []
+    if (!this.apiKey) {
+      log.warn('Stretchly: weather API key not set, skipping geocode')
+      return []
+    }
+    const params = new URLSearchParams({
+      q,
+      limit: String(GEOCODE_RESULT_LIMIT),
+      appid: this.apiKey
+    })
+    try {
+      const res = await fetch(`${OWM_GEOCODE_URL}?${params}`, {
+        signal: AbortSignal.timeout(GEOCODE_FETCH_TIMEOUT_MS)
+      })
+      if (!res.ok) {
+        log.error(`Stretchly: geocode API returned ${res.status}`)
+        return []
+      }
+      const data = await res.json()
+      return this._parseGeocodeResults(data)
+    } catch (e) {
+      log.error('Stretchly: geocode fetch failed:', e.message || e)
+      return []
+    }
   }
 
   async fetchWeather () {
@@ -408,6 +472,9 @@ class WeatherManager extends EventEmitter {
   updateSettings () {
     this.apiKey = this.settings.get('weatherApiKey')
     this.city = this.settings.get('weatherCity')
+    this.weatherLat = this.settings.get('weatherLat')
+    this.weatherLon = this.settings.get('weatherLon')
+    this.weatherLocationName = this.settings.get('weatherLocationName') || ''
     this.offWorkTime = this.settings.get('weatherOffWorkTime')
     this.workdays = this.settings.get('weatherWorkdays')
     this.alertTypes = this.settings.get('weatherAlertTypes')
@@ -417,6 +484,9 @@ class WeatherManager extends EventEmitter {
       this.start()
     } else if (!shouldEnable && this.enabled) {
       this.stop()
+    } else if (this.enabled) {
+      // Location may have changed; refresh soon.
+      this._refreshWeather()
     }
   }
 }

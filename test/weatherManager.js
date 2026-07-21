@@ -20,6 +20,9 @@ function createMockSettings (overrides = {}) {
     weatherEnabled: false,
     weatherApiKey: '',
     weatherCity: '',
+    weatherLat: null,
+    weatherLon: null,
+    weatherLocationName: '',
     weatherOffWorkTime: '17:30',
     weatherWorkdays: [1, 2, 3, 4, 5],
     weatherAlertTypes: {
@@ -457,5 +460,62 @@ describe('weatherManager constants', () => {
   it('temperature thresholds should be 35 and -10', () => {
     EXTREME_HIGH_TEMP.should.be.equal(35)
     EXTREME_LOW_TEMP.should.be.equal(-10)
+  })
+})
+
+describe('weatherManager location resolution', () => {
+  it('prefers saved weather coordinates over city name', async () => {
+    const settings = createMockSettings({
+      weatherCity: 'Guangzhou',
+      weatherLat: 23.1291,
+      weatherLon: 113.2644,
+      weatherLocationName: 'Tianhe, Guangzhou'
+    })
+    const wm = new WeatherManager(settings)
+    const loc = await wm._getLocation()
+    loc.should.deep.equal({ lat: 23.1291, lon: 113.2644 })
+    wm.stop()
+  })
+
+  it('falls back to city name when coordinates are missing', async () => {
+    const settings = createMockSettings({ weatherCity: 'Guangzhou' })
+    const wm = new WeatherManager(settings)
+    const loc = await wm._getLocation()
+    loc.should.deep.equal({ q: 'Guangzhou' })
+    wm.stop()
+  })
+
+  it('ignores zero placeholder coordinates and uses city', async () => {
+    const settings = createMockSettings({
+      weatherCity: 'Guangzhou',
+      weatherLat: 0,
+      weatherLon: 0
+    })
+    const wm = new WeatherManager(settings)
+    const loc = await wm._getLocation()
+    loc.should.deep.equal({ q: 'Guangzhou' })
+    wm.stop()
+  })
+
+  it('parses geocoding API results into selectable locations', () => {
+    const settings = createMockSettings()
+    const wm = new WeatherManager(settings)
+    const parsed = wm._parseGeocodeResults([
+      {
+        name: 'Tianhe',
+        lat: 23.1247,
+        lon: 113.3612,
+        country: 'CN',
+        state: 'Guangdong',
+        local_names: { zh: '天河' }
+      },
+      { name: 'Bad', country: 'CN' }
+    ])
+    parsed.should.have.length(1)
+    parsed[0].name.should.equal('Tianhe')
+    parsed[0].displayName.should.match(/Tianhe|天河/)
+    parsed[0].lat.should.equal(23.1247)
+    parsed[0].lon.should.equal(113.3612)
+    wm.stop()
   })
 })
