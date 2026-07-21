@@ -484,8 +484,11 @@ class WeatherManager extends EventEmitter {
       this.start()
     } else if (!shouldEnable && this.enabled) {
       this.stop()
-    } else if (this.enabled) {
-      // Location may have changed; refresh soon.
+    }
+  }
+
+  refreshNow () {
+    if (this._started) {
       this._refreshWeather()
     }
   }

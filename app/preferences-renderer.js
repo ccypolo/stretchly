@@ -265,6 +265,8 @@ window.onload = async (e) => {
     }
   }
 
+  setupWeatherLocationUi(settings, eventsAttached)
+
   // Weather alert type checkboxes (nested in weatherAlertTypes object)
   const alertTypeMap = {
     weatherAlertPrecipitation: 'precipitation',
@@ -414,5 +416,116 @@ window.onload = async (e) => {
     const microbreakInterval = document.querySelector('#miniBreakEvery').value * 1
     const breakInterval = document.querySelector('#longBreakEvery').value * 1
     return microbreakInterval * (breakInterval + 1)
+  }
+
+  async function setupWeatherLocationUi (settings, eventsAttached) {
+    const selectedWrap = document.querySelector('#weatherLocationSelected')
+    const selectedName = document.querySelector('#weatherLocationSelectedName')
+    const statusEl = document.querySelector('#weatherLocationStatus')
+    const resultsEl = document.querySelector('#weatherLocationResults')
+    const searchBtn = document.querySelector('#weatherLocationSearch')
+    const clearBtn = document.querySelector('#weatherLocationClear')
+    const cityInput = document.querySelector('#weatherCity')
+    if (!selectedWrap || !selectedName || !statusEl || !resultsEl || !searchBtn || !clearBtn || !cityInput) {
+      return
+    }
+
+    const refreshSelected = () => {
+      const name = settings.weatherLocationName
+      const lat = settings.weatherLat
+      const lon = settings.weatherLon
+      if (name && lat && lon && lat !== 0 && lon !== 0) {
+        selectedName.textContent = `${name} (${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)})`
+        selectedWrap.classList.remove('hidden')
+      } else {
+        selectedName.textContent = ''
+        selectedWrap.classList.add('hidden')
+      }
+    }
+
+    const setStatus = async (key) => {
+      statusEl.textContent = key ? await window.i18next.t(key) : ''
+    }
+
+    const renderResults = (locations) => {
+      resultsEl.innerHTML = ''
+      if (!locations || locations.length === 0) {
+        resultsEl.classList.add('hidden')
+        return
+      }
+      resultsEl.classList.remove('hidden')
+      for (const loc of locations) {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.textContent = loc.displayName
+        btn.onclick = () => {
+          settings.weatherLocationName = loc.displayName
+          settings.weatherLat = loc.lat
+          settings.weatherLon = loc.lon
+          window.settings.saveSettings('weatherLocationName', loc.displayName)
+          window.settings.saveSettings('weatherLat', loc.lat)
+          window.settings.saveSettings('weatherLon', loc.lon)
+          resultsEl.innerHTML = ''
+          resultsEl.classList.add('hidden')
+          statusEl.textContent = ''
+          refreshSelected()
+        }
+        resultsEl.appendChild(btn)
+      }
+    }
+
+    refreshSelected()
+
+    if (!eventsAttached) {
+      searchBtn.onclick = async () => {
+        const query = cityInput.value.trim()
+        const apiKey = document.querySelector('#weatherApiKey')?.value?.trim() || settings.weatherApiKey
+        if (!apiKey) {
+          await setStatus('preferences.settings.weatherLocationNeedKey')
+          return
+        }
+        if (!query) {
+          await setStatus('preferences.settings.weatherLocationNeedQuery')
+          return
+        }
+        await setStatus('preferences.settings.weatherLocationSearching')
+        resultsEl.classList.add('hidden')
+        try {
+          // Ensure API key is saved before search (manager reads from store)
+          window.settings.saveSettings('weatherApiKey', apiKey)
+          const locations = await window.stretchly.searchWeatherLocations(query)
+          if (!locations || locations.length === 0) {
+            await setStatus('preferences.settings.weatherLocationNoResults')
+            renderResults([])
+            return
+          }
+          statusEl.textContent = ''
+          renderResults(locations)
+        } catch (e) {
+          await setStatus('preferences.settings.weatherLocationError')
+          renderResults([])
+        }
+      }
+
+      clearBtn.onclick = () => {
+        settings.weatherLocationName = ''
+        settings.weatherLat = null
+        settings.weatherLon = null
+        window.settings.saveSettings('weatherLocationName', '')
+        window.settings.saveSettings('weatherLat', null)
+        window.settings.saveSettings('weatherLon', null)
+        resultsEl.innerHTML = ''
+        resultsEl.classList.add('hidden')
+        statusEl.textContent = ''
+        refreshSelected()
+      }
+
+      cityInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          searchBtn.click()
+        }
+      })
+    }
   }
 }

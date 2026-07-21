@@ -1841,6 +1841,10 @@ ipcMain.on('save-setting', function (event, key, value) {
 
   if (key.startsWith('weather')) {
     weatherManager.updateSettings()
+    // Refresh once when coordinates are finalized (UI saves lon last) or city/key/enabled change.
+    if (['weatherLon', 'weatherCity', 'weatherApiKey', 'weatherEnabled', 'weatherForecastEnabled'].includes(key)) {
+      weatherManager.refreshNow()
+    }
   }
 
   if (key === 'useExternalIdeas' || key === 'externalMicrobreakIdeasPath' || key === 'externalBreakIdeasPath') {
@@ -1889,6 +1893,7 @@ ipcMain.handle('get-weather', () => {
 
 ipcMain.handle('weather-geocode-search', async (_event, query) => {
   if (!weatherManager) return []
+  weatherManager.updateSettings()
   return weatherManager.searchLocations(query)
 })
 

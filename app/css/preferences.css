@@ -412,3 +412,31 @@ body[dir=rtl] .heart > .authenticate > a {
   padding-right: 0;
   padding-left: 20px;
 }
+
+.weather-location-selected {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.weather-location-selected.hidden,
+.weather-location-results.hidden {
+  display: none;
+}
+
+.weather-location-status {
+  font-size: 12px;
+  min-height: 1em;
+  opacity: 0.8;
+}
+
+.weather-location-results {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+}
+
+.weather-location-results button {
+  text-align: left;
+  padding: 6px 8px;
+  cursor: pointer;
+}

@@ -434,8 +434,16 @@
     </div>
     <div>
       <label data-i18next="preferences.settings.weatherCity" for="weatherCity"></label>
-      <input type="text" name="weatherCity" id="weatherCity">
+      <input type="text" name="weatherCity" id="weatherCity" placeholder="">
+      <button type="button" id="weatherLocationSearch" data-i18next="preferences.settings.weatherLocationSearch"></button>
+      <button type="button" id="weatherLocationClear" data-i18next="preferences.settings.weatherLocationClear"></button>
     </div>
+    <div id="weatherLocationSelected" class="weather-location-selected">
+      <span data-i18next="preferences.settings.weatherLocationSelected"></span>
+      <strong id="weatherLocationSelectedName"></strong>
+    </div>
+    <div id="weatherLocationStatus" class="weather-location-status"></div>
+    <div id="weatherLocationResults" class="weather-location-results"></div>
     <div class="divider">
       <hr />
     </div>
