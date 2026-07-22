@@ -649,6 +649,8 @@ describe('weatherManager location resolution', () => {
         forecast[0].pop.should.equal(0.8)
         // Combined endpoint should only be called once for weather+forecast
         global.fetch.mock.calls.length.should.equal(1)
+        String(global.fetch.mock.calls[0][0]).should.not.match(/alert=false/)
+        String(global.fetch.mock.calls[0][0]).should.match(/hourlysteps=12/)
       } finally {
         global.fetch = originalFetch
         wm.stop()

@@ -106,6 +106,7 @@ class WeatherManager extends EventEmitter {
     this.lastFetchTime = null
     this.timer = null
     this._started = false
+    this._refreshInFlight = false
     this._lastAlertedConditions = new Set()
     this._offWorkAlertFiredToday = false
     this._offWorkAlertDate = null
@@ -306,14 +307,19 @@ class WeatherManager extends EventEmitter {
       return null
     }
     const hourlysteps = Math.max(FORECAST_HOURS, 12)
-    const url = `${CAIYUN_WEATHER_URL}/${encodeURIComponent(this.caiyunToken)}/${location.lon},${location.lat}/weather?alert=false&dailysteps=1&hourlysteps=${hourlysteps}`
+    // Caiyun rejects alert=false with HTTP 422; omit alert unless we need warning payloads.
+    const url = `${CAIYUN_WEATHER_URL}/${encodeURIComponent(this.caiyunToken)}/${location.lon},${location.lat}/weather?dailysteps=1&hourlysteps=${hourlysteps}`
     log.info(`Stretchly: fetching Caiyun weather at ${new Date().toISOString()}`)
     let lastError = null
     for (let attempt = 1; attempt <= WEATHER_FETCH_RETRIES; attempt++) {
       try {
         const res = await fetch(url, { signal: AbortSignal.timeout(WEATHER_FETCH_TIMEOUT_MS) })
         if (!res.ok) {
-          log.error(`Stretchly: Caiyun API returned ${res.status} at ${new Date().toISOString()}`)
+          let detail = ''
+          try {
+            detail = (await res.text()).slice(0, 200)
+          } catch {}
+          log.error(`Stretchly: Caiyun API returned ${res.status} at ${new Date().toISOString()}${detail ? `: ${detail}` : ''}`)
           return null
         }
         const data = await res.json()
@@ -608,45 +614,51 @@ class WeatherManager extends EventEmitter {
 
   async _refreshWeather () {
     if (!this._started) return
+    if (this._refreshInFlight) return
+    this._refreshInFlight = true
 
-    const weather = await this.fetchWeather()
-    if (!this._started) return
+    try {
+      const weather = await this.fetchWeather()
+      if (!this._started) return
 
-    if (weather) {
-      // Check severe weather alerts
-      const newAlerts = this.shouldAlertSevereWeather(weather)
-      if (newAlerts) {
-        this.emit('severeWeatherAlert', newAlerts, weather)
-      }
+      if (weather) {
+        // Check severe weather alerts
+        const newAlerts = this.shouldAlertSevereWeather(weather)
+        if (newAlerts) {
+          this.emit('severeWeatherAlert', newAlerts, weather)
+        }
 
-      // Check off-work rain alert
-      if (this.checkOffWorkRainAlert(weather)) {
-        this.emit('offWorkRainAlert', weather)
-      }
+        // Check off-work rain alert
+        if (this.checkOffWorkRainAlert(weather)) {
+          this.emit('offWorkRainAlert', weather)
+        }
 
-      // Fetch forecast if enabled
-      if (this.settings.get('weatherForecastEnabled')) {
-        const forecast = await this.fetchForecast()
-        if (!this._started) return
+        // Fetch forecast if enabled
+        if (this.settings.get('weatherForecastEnabled')) {
+          const forecast = await this.fetchForecast()
+          if (!this._started) return
 
-        if (forecast) {
-          this.emit('forecastUpdated', forecast)
+          if (forecast) {
+            this.emit('forecastUpdated', forecast)
 
-          // Check weather change notification
-          if (this.settings.get('weatherChangeNotify')) {
-            const change = this.detectWeatherChange()
-            if (change) {
-              this.emit('weatherChangeAlert', change)
+            // Check weather change notification
+            if (this.settings.get('weatherChangeNotify')) {
+              const change = this.detectWeatherChange()
+              if (change) {
+                this.emit('weatherChangeAlert', change)
+              }
             }
           }
         }
       }
-    }
 
-    // Schedule next refresh
-    if (!this._started) return
-    if (this.timer) clearInterval(this.timer)
-    this.timer = setInterval(() => this._refreshWeather(), WEATHER_REFRESH_INTERVAL)
+      // Schedule next refresh
+      if (!this._started) return
+      if (this.timer) clearInterval(this.timer)
+      this.timer = setInterval(() => this._refreshWeather(), WEATHER_REFRESH_INTERVAL)
+    } finally {
+      this._refreshInFlight = false
+    }
   }
 
   updateSettings () {
