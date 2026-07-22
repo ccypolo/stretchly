@@ -306,8 +306,9 @@ class WeatherManager extends EventEmitter {
       log.warn('Stretchly: Caiyun requires coordinates; set a weather location first')
       return null
     }
-    const hourlysteps = Math.max(FORECAST_HOURS, 12)
-    // Caiyun rejects alert=false with HTTP 422; omit alert unless we need warning payloads.
+    // Free/demo tokens reject some hourlysteps values (e.g. 12 → 422).
+    // Official docs example uses 24; we still trim to FORECAST_HOURS client-side.
+    const hourlysteps = 24
     const url = `${CAIYUN_WEATHER_URL}/${encodeURIComponent(this.caiyunToken)}/${location.lon},${location.lat}/weather?dailysteps=1&hourlysteps=${hourlysteps}`
     log.info(`Stretchly: fetching Caiyun weather at ${new Date().toISOString()}`)
     let lastError = null
