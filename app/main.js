@@ -1842,7 +1842,8 @@ ipcMain.on('save-setting', function (event, key, value) {
   if (key.startsWith('weather')) {
     weatherManager.updateSettings()
     // Refresh once when coordinates are finalized (UI saves lon last) or city/key/enabled change.
-    if (['weatherLon', 'weatherCity', 'weatherApiKey', 'weatherEnabled', 'weatherForecastEnabled'].includes(key)) {
+    if (['weatherLon', 'weatherCity', 'weatherApiKey', 'weatherCaiyunToken', 'weatherProvider',
+      'weatherEnabled', 'weatherForecastEnabled'].includes(key)) {
       weatherManager.refreshNow()
     }
   }

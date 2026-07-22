@@ -413,6 +413,18 @@ body[dir=rtl] .heart > .authenticate > a {
   padding-left: 20px;
 }
 
+.weather-provider-hint {
+  font-size: 12px;
+  opacity: 0.8;
+  margin: 4px 0 0;
+  max-width: 420px;
+}
+
+#weatherProviderOwmFields.hidden,
+#weatherProviderCaiyunFields.hidden {
+  display: none;
+}
+
 .weather-location-coords {
   display: flex;
   flex-wrap: wrap;

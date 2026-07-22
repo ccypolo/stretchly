@@ -222,6 +222,26 @@ window.onload = async (e) => {
     }
   }
 
+  const weatherProviderSelect = document.querySelector('#weatherProvider')
+  const weatherOwmFields = document.querySelector('#weatherProviderOwmFields')
+  const weatherCaiyunFields = document.querySelector('#weatherProviderCaiyunFields')
+  const refreshWeatherProviderFields = (provider) => {
+    const isCaiyun = provider === 'caiyun'
+    if (weatherOwmFields) weatherOwmFields.classList.toggle('hidden', isCaiyun)
+    if (weatherCaiyunFields) weatherCaiyunFields.classList.toggle('hidden', !isCaiyun)
+  }
+  if (weatherProviderSelect) {
+    weatherProviderSelect.value = settings.weatherProvider || 'openweathermap'
+    refreshWeatherProviderFields(weatherProviderSelect.value)
+    if (!eventsAttached) {
+      weatherProviderSelect.onchange = (event) => {
+        const provider = event.target.value
+        refreshWeatherProviderFields(provider)
+        window.settings.saveSettings('weatherProvider', provider)
+      }
+    }
+  }
+
   document.querySelectorAll('input[type="range"]').forEach(async range => {
     const divisor = range.dataset.divisor
     const output = range.closest('div').querySelector('output')

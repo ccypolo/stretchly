@@ -429,8 +429,20 @@
       <label data-i18next="preferences.settings.weatherEnabled" for="weatherEnabled"></label>
     </div>
     <div>
+      <label data-i18next="preferences.settings.weatherProvider" for="weatherProvider"></label>
+      <select name="weatherProvider" id="weatherProvider">
+        <option value="openweathermap" data-i18next="preferences.settings.weatherProviderOwm"></option>
+        <option value="caiyun" data-i18next="preferences.settings.weatherProviderCaiyun"></option>
+      </select>
+    </div>
+    <div id="weatherProviderOwmFields">
       <label data-i18next="preferences.settings.weatherApiKey" for="weatherApiKey"></label>
       <input type="text" name="weatherApiKey" id="weatherApiKey">
+    </div>
+    <div id="weatherProviderCaiyunFields" class="hidden">
+      <label data-i18next="preferences.settings.weatherCaiyunToken" for="weatherCaiyunToken"></label>
+      <input type="text" name="weatherCaiyunToken" id="weatherCaiyunToken">
+      <p class="weather-provider-hint" data-i18next="preferences.settings.weatherCaiyunHint"></p>
     </div>
     <div>
       <label data-i18next="preferences.settings.weatherCity" for="weatherCity"></label>

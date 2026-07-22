@@ -1,13 +1,15 @@
-# 手动指定经纬度 Plan
+# 彩云天气可选数据源 Plan
 
-## 需求（已确认 A+C）
-设置页增加纬度/经度输入框 +「应用坐标」；成功后写入选区并清空搜索结果列表。
+## 需求（已确认）
+设置可切换 OpenWeatherMap / 彩云；彩云用 v2.6 Token + 综合 weather 接口；必须有效坐标。
 
 ## BDD
-1. Given 填入合法 lat/lon，When 点「应用坐标」，Then 保存 weatherLat/Lon，名称用 `lat, lon`，显示已选区域，清空搜索结果
-2. Given 坐标非法，When 点应用，Then 提示错误，不覆盖已有有效选区
-3. Given 已用手填坐标，When 拉天气，Then `_getLocation` 使用该坐标（与搜索/IP 同优先级）
+1. Given 数据源=彩云且 Token+坐标有效，When 刷新，Then 托盘/菜单显示彩云实况与预报
+2. Given 彩云缺 Token 或坐标，When 刷新，Then 不乱请求，可理解失败
+3. Given 数据源=OWM，When 照旧配置，Then 行为不变
+4. Given 切换数据源或保存彩云 Token，When 保存，Then 触发刷新
 
 ## 步骤
-### 1. [已完成] 偏好页 lat/lon 输入 + 应用按钮 + 校验/文案（en/zh-CN）
-### 2. [已完成] 验证 + 打包 Portable
+### 1. [已完成] 设置项 + 偏好页：数据源下拉、彩云 Token
+### 2. [已完成] weatherManager 彩云拉取/解析/skycon 映射 + 单测
+### 3. [进行中] 验证 + 打包 Portable
