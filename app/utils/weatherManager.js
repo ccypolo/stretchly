@@ -7,6 +7,7 @@ const IP_API_URL = 'http://ip-api.com/json/?fields=status,message,lat,lon,city,r
 const OWM_CURRENT_URL = 'https://api.openweathermap.org/data/2.5/weather'
 const OWM_FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast'
 const OWM_GEOCODE_URL = 'https://api.openweathermap.org/geo/1.0/direct'
+const CAIYUN_WEATHER_URL = 'https://api.caiyunapp.com/v2.6'
 const FORECAST_HOURS = 12 // look ahead 12 hours (OWM steps are 3h)
 const FORECAST_FETCH_TIMEOUT_MS = 20000
 const FORECAST_FETCH_RETRIES = 2
@@ -35,6 +36,29 @@ const SEVERE_WIND_SPEED = 10.8 // m/s, ~Beaufort 6
 const EXTREME_HIGH_TEMP = 35 // °C
 const EXTREME_LOW_TEMP = -10 // °C
 
+const SKYCON_MAP = Object.freeze({
+  CLEAR_DAY: { icon: '01d', conditionId: 800, en: 'Clear', zh: '晴' },
+  CLEAR_NIGHT: { icon: '01n', conditionId: 800, en: 'Clear', zh: '晴' },
+  PARTLY_CLOUDY_DAY: { icon: '02d', conditionId: 801, en: 'Partly cloudy', zh: '多云' },
+  PARTLY_CLOUDY_NIGHT: { icon: '02n', conditionId: 801, en: 'Partly cloudy', zh: '多云' },
+  CLOUDY: { icon: '04d', conditionId: 804, en: 'Cloudy', zh: '阴' },
+  LIGHT_HAZE: { icon: '50d', conditionId: 721, en: 'Light haze', zh: '轻度雾霾' },
+  MODERATE_HAZE: { icon: '50d', conditionId: 721, en: 'Moderate haze', zh: '中度雾霾' },
+  HEAVY_HAZE: { icon: '50d', conditionId: 721, en: 'Heavy haze', zh: '重度雾霾' },
+  LIGHT_RAIN: { icon: '10d', conditionId: 500, en: 'Light rain', zh: '小雨' },
+  MODERATE_RAIN: { icon: '10d', conditionId: 501, en: 'Moderate rain', zh: '中雨' },
+  HEAVY_RAIN: { icon: '09d', conditionId: 502, en: 'Heavy rain', zh: '大雨' },
+  STORM_RAIN: { icon: '09d', conditionId: 503, en: 'Storm rain', zh: '暴雨' },
+  FOG: { icon: '50d', conditionId: 741, en: 'Fog', zh: '雾' },
+  LIGHT_SNOW: { icon: '13d', conditionId: 600, en: 'Light snow', zh: '小雪' },
+  MODERATE_SNOW: { icon: '13d', conditionId: 601, en: 'Moderate snow', zh: '中雪' },
+  HEAVY_SNOW: { icon: '13d', conditionId: 602, en: 'Heavy snow', zh: '大雪' },
+  STORM_SNOW: { icon: '13d', conditionId: 602, en: 'Storm snow', zh: '暴雪' },
+  DUST: { icon: '50d', conditionId: 761, en: 'Dust', zh: '浮尘' },
+  SAND: { icon: '50d', conditionId: 731, en: 'Sand', zh: '沙尘' },
+  WIND: { icon: '50d', conditionId: 771, en: 'Windy', zh: '大风' }
+})
+
 function range (start, end) {
   return Array.from({ length: end - start }, (_, i) => start + i)
 }
@@ -43,12 +67,30 @@ function isValidWeatherCoordinate (value) {
   return typeof value === 'number' && Number.isFinite(value) && value !== 0
 }
 
+function isChineseLanguage (lang) {
+  return typeof lang === 'string' && lang.toLowerCase().startsWith('zh')
+}
+
+/**
+ * Map Caiyun skycon to OWM-compatible icon + conditionId for tray/alerts.
+ */
+function mapCaiyunSkycon (skycon, lang = 'en') {
+  const mapped = SKYCON_MAP[skycon] || { icon: '03d', conditionId: 802, en: skycon || 'Unknown', zh: skycon || '未知' }
+  return {
+    icon: mapped.icon,
+    conditionId: mapped.conditionId,
+    description: isChineseLanguage(lang) ? mapped.zh : mapped.en
+  }
+}
+
 class WeatherManager extends EventEmitter {
   constructor (settings) {
     super()
     this.settings = settings
     this.enabled = false
+    this.provider = settings.get('weatherProvider') || 'openweathermap'
     this.apiKey = settings.get('weatherApiKey')
+    this.caiyunToken = settings.get('weatherCaiyunToken') || ''
     this.city = settings.get('weatherCity')
     this.weatherLat = settings.get('weatherLat')
     this.weatherLon = settings.get('weatherLon')
@@ -60,6 +102,7 @@ class WeatherManager extends EventEmitter {
     this.cachedWeather = null
     this.cachedForecast = null
     this.cachedLocation = null
+    this._caiyunForecastBundle = null
     this.lastFetchTime = null
     this.timer = null
     this._started = false
@@ -68,9 +111,16 @@ class WeatherManager extends EventEmitter {
     this._offWorkAlertDate = null
     this._lastForecastChangeAlert = null
 
-    if (settings.get('weatherEnabled') && this.apiKey) {
+    if (settings.get('weatherEnabled') && this._hasCredentials()) {
       this.start()
     }
+  }
+
+  _hasCredentials () {
+    if (this.provider === 'caiyun') {
+      return !!this.caiyunToken
+    }
+    return !!this.apiKey
   }
 
   start () {
@@ -204,6 +254,13 @@ class WeatherManager extends EventEmitter {
   }
 
   async fetchWeather () {
+    if (this.provider === 'caiyun') {
+      return this._fetchCaiyunWeather()
+    }
+    return this._fetchOwmWeather()
+  }
+
+  async _fetchOwmWeather () {
     if (!this.apiKey) {
       log.warn('Stretchly: weather API key not set, skipping fetch')
       return null
@@ -238,6 +295,49 @@ class WeatherManager extends EventEmitter {
     return null
   }
 
+  async _fetchCaiyunWeather () {
+    if (!this.caiyunToken) {
+      log.warn('Stretchly: Caiyun token not set, skipping fetch')
+      return null
+    }
+    const location = await this._getLocation()
+    if (!location || !isValidWeatherCoordinate(location.lat) || !isValidWeatherCoordinate(location.lon)) {
+      log.warn('Stretchly: Caiyun requires coordinates; set a weather location first')
+      return null
+    }
+    const hourlysteps = Math.max(FORECAST_HOURS, 12)
+    const url = `${CAIYUN_WEATHER_URL}/${encodeURIComponent(this.caiyunToken)}/${location.lon},${location.lat}/weather?alert=false&dailysteps=1&hourlysteps=${hourlysteps}`
+    log.info(`Stretchly: fetching Caiyun weather at ${new Date().toISOString()}`)
+    let lastError = null
+    for (let attempt = 1; attempt <= WEATHER_FETCH_RETRIES; attempt++) {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(WEATHER_FETCH_TIMEOUT_MS) })
+        if (!res.ok) {
+          log.error(`Stretchly: Caiyun API returned ${res.status} at ${new Date().toISOString()}`)
+          return null
+        }
+        const data = await res.json()
+        if (data.status !== 'ok' || !data.result || !data.result.realtime) {
+          log.error('Stretchly: Caiyun API returned unexpected payload')
+          return null
+        }
+        const lang = this.settings.get('language') || 'en'
+        this.cachedWeather = this._parseCaiyunRealtime(data.result.realtime, lang)
+        this._caiyunForecastBundle = this._parseCaiyunHourly(data.result.hourly, lang)
+        this.cachedForecast = this._caiyunForecastBundle
+        this.lastFetchTime = Date.now()
+        log.info(`Stretchly: Caiyun weather updated at ${new Date().toISOString()} - ${this.cachedWeather.city} ${this.cachedWeather.temp}°C ${this.cachedWeather.description} (wind ${this.cachedWeather.windSpeed}m/s, humidity ${this.cachedWeather.humidity}%)`)
+        this.emit('weatherUpdated', this.cachedWeather)
+        return this.cachedWeather
+      } catch (e) {
+        lastError = e
+        log.error(`Stretchly: Caiyun weather fetch failed (attempt ${attempt}/${WEATHER_FETCH_RETRIES}) at ${new Date().toISOString()}:`, e.message || e)
+      }
+    }
+    log.error(`Stretchly: Caiyun weather fetch failed at ${new Date().toISOString()}:`, lastError && (lastError.message || lastError))
+    return null
+  }
+
   _parseWeather (data) {
     return {
       temp: Math.round(data.main.temp),
@@ -252,7 +352,68 @@ class WeatherManager extends EventEmitter {
     }
   }
 
+  _parseCaiyunRealtime (realtime, lang) {
+    const sky = mapCaiyunSkycon(realtime.skycon, lang)
+    // Caiyun wind.speed is km/h; convert to m/s for existing alert thresholds.
+    const windKmh = Number(realtime.wind && realtime.wind.speed)
+    const windSpeed = Number.isFinite(windKmh) ? windKmh / 3.6 : 0
+    const humidityRaw = Number(realtime.humidity)
+    const humidity = Number.isFinite(humidityRaw)
+      ? Math.round(humidityRaw <= 1 ? humidityRaw * 100 : humidityRaw)
+      : 0
+    return {
+      temp: Math.round(Number(realtime.temperature) || 0),
+      feelsLike: Math.round(Number(realtime.apparent_temperature) || Number(realtime.temperature) || 0),
+      description: sky.description,
+      icon: sky.icon,
+      conditionId: sky.conditionId,
+      windSpeed,
+      city: this.weatherLocationName || '',
+      humidity,
+      timestamp: Date.now()
+    }
+  }
+
+  _parseCaiyunHourly (hourly, lang) {
+    if (!hourly || !Array.isArray(hourly.skycon)) return []
+    const now = Date.now()
+    const cutoff = now + FORECAST_HOURS * 60 * 60 * 1000
+    const temps = new Map((hourly.temperature || []).map(item => [item.datetime, item.value]))
+    const pops = new Map((hourly.precipitation || []).map(item => {
+      const probability = Number(item.probability)
+      return [item.datetime, Number.isFinite(probability) ? probability / 100 : 0]
+    }))
+    return hourly.skycon
+      .map(item => {
+        const time = new Date(item.datetime)
+        const sky = mapCaiyunSkycon(item.value, lang)
+        const temp = Number(temps.get(item.datetime))
+        return {
+          time,
+          temp: Number.isFinite(temp) ? Math.round(temp) : 0,
+          description: sky.description,
+          icon: sky.icon,
+          conditionId: sky.conditionId,
+          pop: pops.get(item.datetime) || 0
+        }
+      })
+      .filter(item => item.time.getTime() > now && item.time.getTime() <= cutoff)
+  }
+
   async fetchForecast () {
+    if (this.provider === 'caiyun') {
+      if (this._caiyunForecastBundle) {
+        this.cachedForecast = this._caiyunForecastBundle
+        return this.cachedForecast
+      }
+      // Bundle missing (e.g. forecast-only call): refetch combined endpoint.
+      await this._fetchCaiyunWeather()
+      return this.cachedForecast
+    }
+    return this._fetchOwmForecast()
+  }
+
+  async _fetchOwmForecast () {
     if (!this.apiKey) return null
     const location = await this._getLocation()
     if (!location) return null
@@ -489,7 +650,9 @@ class WeatherManager extends EventEmitter {
   }
 
   updateSettings () {
+    this.provider = this.settings.get('weatherProvider') || 'openweathermap'
     this.apiKey = this.settings.get('weatherApiKey')
+    this.caiyunToken = this.settings.get('weatherCaiyunToken') || ''
     this.city = this.settings.get('weatherCity')
     this.weatherLat = this.settings.get('weatherLat')
     this.weatherLon = this.settings.get('weatherLon')
@@ -497,7 +660,7 @@ class WeatherManager extends EventEmitter {
     this.offWorkTime = this.settings.get('weatherOffWorkTime')
     this.workdays = this.settings.get('weatherWorkdays')
     this.alertTypes = this.settings.get('weatherAlertTypes')
-    const shouldEnable = this.settings.get('weatherEnabled') && this.apiKey
+    const shouldEnable = this.settings.get('weatherEnabled') && this._hasCredentials()
 
     if (shouldEnable && !this.enabled) {
       this.start()
@@ -517,5 +680,6 @@ export default WeatherManager
 export {
   SEVERE_PRECIPITATION_IDS, SEVERE_FOG_DUST_IDS,
   SEVERE_WIND_SPEED, EXTREME_HIGH_TEMP, EXTREME_LOW_TEMP,
-  WEATHER_REFRESH_INTERVAL
+  WEATHER_REFRESH_INTERVAL,
+  mapCaiyunSkycon
 }

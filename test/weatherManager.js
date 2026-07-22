@@ -2,7 +2,8 @@ import { vi } from 'vitest'
 import 'chai/register-should'
 import WeatherManager, {
   SEVERE_PRECIPITATION_IDS, SEVERE_FOG_DUST_IDS,
-  SEVERE_WIND_SPEED, EXTREME_HIGH_TEMP, EXTREME_LOW_TEMP
+  SEVERE_WIND_SPEED, EXTREME_HIGH_TEMP, EXTREME_LOW_TEMP,
+  mapCaiyunSkycon
 } from '../app/utils/weatherManager'
 
 // Mock electron-log for test environment
@@ -18,7 +19,9 @@ vi.mock('electron-log/main.js', () => ({
 function createMockSettings (overrides = {}) {
   const defaults = {
     weatherEnabled: false,
+    weatherProvider: 'openweathermap',
     weatherApiKey: '',
+    weatherCaiyunToken: '',
     weatherCity: '',
     weatherLat: null,
     weatherLon: null,
@@ -31,6 +34,7 @@ function createMockSettings (overrides = {}) {
       extremeTemp: true,
       fogDust: true
     },
+    weatherForecastEnabled: true,
     posLatitude: 0.0,
     posLongitude: 0.0,
     language: 'en'
@@ -57,6 +61,39 @@ describe('weatherManager', function () {
       const wm = new WeatherManager(settings)
       wm.enabled.should.be.equal(false)
       ;(wm.timer === null).should.be.equal(true)
+      wm.stop()
+    })
+
+    it('should start with Caiyun token when provider is caiyun', () => {
+      const settings = createMockSettings({
+        weatherEnabled: true,
+        weatherProvider: 'caiyun',
+        weatherCaiyunToken: 'test-token',
+        weatherLat: 23.1,
+        weatherLon: 113.3
+      })
+      const originalFetch = global.fetch
+      global.fetch = vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ status: 'ok', result: { realtime: { skycon: 'CLEAR_DAY', temperature: 28, apparent_temperature: 29, humidity: 0.6, wind: { speed: 3.6 } }, hourly: { skycon: [] } } })
+      }))
+      const wm = new WeatherManager(settings)
+      try {
+        wm.enabled.should.be.equal(true)
+      } finally {
+        global.fetch = originalFetch
+        wm.stop()
+      }
+    })
+
+    it('should not start Caiyun without token', () => {
+      const settings = createMockSettings({
+        weatherEnabled: true,
+        weatherProvider: 'caiyun',
+        weatherCaiyunToken: ''
+      })
+      const wm = new WeatherManager(settings)
+      wm.enabled.should.be.equal(false)
       wm.stop()
     })
   })
@@ -531,5 +568,91 @@ describe('weatherManager location resolution', () => {
       global.fetch = originalFetch
       wm.stop()
     }
+  })
+
+  describe('caiyun provider', () => {
+    it('mapCaiyunSkycon maps rain and clear for tray/alerts', () => {
+      const rain = mapCaiyunSkycon('MODERATE_RAIN', 'zh-CN')
+      rain.conditionId.should.equal(501)
+      rain.icon.should.equal('10d')
+      rain.description.should.equal('中雨')
+      const clear = mapCaiyunSkycon('CLEAR_DAY', 'en')
+      clear.conditionId.should.equal(800)
+      clear.description.should.equal('Clear')
+    })
+
+    it('skips Caiyun fetch without coordinates', async () => {
+      const settings = createMockSettings({
+        weatherProvider: 'caiyun',
+        weatherCaiyunToken: 'token',
+        weatherCity: 'Guangzhou'
+      })
+      const wm = new WeatherManager(settings)
+      const originalFetch = global.fetch
+      global.fetch = vi.fn()
+      try {
+        const weather = await wm.fetchWeather()
+        should.not.exist(weather)
+        global.fetch.mock.calls.length.should.equal(0)
+      } finally {
+        global.fetch = originalFetch
+        wm.stop()
+      }
+    })
+
+    it('parses Caiyun realtime and reuses hourly bundle for forecast', async () => {
+      const settings = createMockSettings({
+        weatherProvider: 'caiyun',
+        weatherCaiyunToken: 'token',
+        weatherLat: 23.1291,
+        weatherLon: 113.2644,
+        weatherLocationName: '广州天河',
+        language: 'zh-CN'
+      })
+      const wm = new WeatherManager(settings)
+      const future = new Date(Date.now() + 2 * 60 * 60 * 1000)
+      const pad = (n) => String(n).padStart(2, '0')
+      const inTwoHours = `${future.getFullYear()}-${pad(future.getMonth() + 1)}-${pad(future.getDate())}T${pad(future.getHours())}:00`
+      const originalFetch = global.fetch
+      global.fetch = vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          status: 'ok',
+          result: {
+            realtime: {
+              skycon: 'LIGHT_RAIN',
+              temperature: 26.4,
+              apparent_temperature: 27.1,
+              humidity: 0.82,
+              wind: { speed: 18 } // km/h → 5 m/s
+            },
+            hourly: {
+              skycon: [{ datetime: inTwoHours, value: 'MODERATE_RAIN' }],
+              temperature: [{ datetime: inTwoHours, value: 25.2 }],
+              precipitation: [{ datetime: inTwoHours, probability: 80 }]
+            }
+          }
+        })
+      }))
+      try {
+        const weather = await wm.fetchWeather()
+        weather.temp.should.equal(26)
+        weather.description.should.equal('小雨')
+        weather.conditionId.should.equal(500)
+        weather.city.should.equal('广州天河')
+        Math.round(weather.windSpeed * 10).should.equal(50) // 18/3.6 = 5
+        weather.humidity.should.equal(82)
+
+        const forecast = await wm.fetchForecast()
+        forecast.should.have.length(1)
+        forecast[0].conditionId.should.equal(501)
+        forecast[0].pop.should.equal(0.8)
+        // Combined endpoint should only be called once for weather+forecast
+        global.fetch.mock.calls.length.should.equal(1)
+      } finally {
+        global.fetch = originalFetch
+        wm.stop()
+      }
+    })
   })
 })
