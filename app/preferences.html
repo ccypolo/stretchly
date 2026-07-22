@@ -439,6 +439,13 @@
       <button type="button" id="weatherLocationByIp" data-i18next="preferences.settings.weatherLocationByIp"></button>
       <button type="button" id="weatherLocationClear" data-i18next="preferences.settings.weatherLocationClear"></button>
     </div>
+    <div class="weather-location-coords">
+      <label data-i18next="preferences.settings.weatherLocationLat" for="weatherLocationLat"></label>
+      <input type="text" id="weatherLocationLat" inputmode="decimal" autocomplete="off">
+      <label data-i18next="preferences.settings.weatherLocationLon" for="weatherLocationLon"></label>
+      <input type="text" id="weatherLocationLon" inputmode="decimal" autocomplete="off">
+      <button type="button" id="weatherLocationApplyCoords" data-i18next="preferences.settings.weatherLocationApplyCoords"></button>
+    </div>
     <div id="weatherLocationSelected" class="weather-location-selected">
       <span data-i18next="preferences.settings.weatherLocationSelected"></span>
       <strong id="weatherLocationSelectedName"></strong>

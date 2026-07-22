@@ -418,6 +418,17 @@ window.onload = async (e) => {
     return microbreakInterval * (breakInterval + 1)
   }
 
+  function parseWeatherCoordinate (raw, min, max) {
+    if (raw === undefined || raw === null || String(raw).trim() === '') {
+      return null
+    }
+    const value = Number(String(raw).trim())
+    if (!Number.isFinite(value) || value < min || value > max) {
+      return null
+    }
+    return value
+  }
+
   async function setupWeatherLocationUi (settings, eventsAttached) {
     const selectedWrap = document.querySelector('#weatherLocationSelected')
     const selectedName = document.querySelector('#weatherLocationSelectedName')
@@ -426,8 +437,12 @@ window.onload = async (e) => {
     const searchBtn = document.querySelector('#weatherLocationSearch')
     const ipBtn = document.querySelector('#weatherLocationByIp')
     const clearBtn = document.querySelector('#weatherLocationClear')
+    const applyCoordsBtn = document.querySelector('#weatherLocationApplyCoords')
+    const latInput = document.querySelector('#weatherLocationLat')
+    const lonInput = document.querySelector('#weatherLocationLon')
     const cityInput = document.querySelector('#weatherCity')
-    if (!selectedWrap || !selectedName || !statusEl || !resultsEl || !searchBtn || !ipBtn || !clearBtn || !cityInput) {
+    if (!selectedWrap || !selectedName || !statusEl || !resultsEl || !searchBtn || !ipBtn || !clearBtn ||
+        !applyCoordsBtn || !latInput || !lonInput || !cityInput) {
       return
     }
 
@@ -438,6 +453,8 @@ window.onload = async (e) => {
       if (name && lat && lon && lat !== 0 && lon !== 0) {
         selectedName.textContent = `${name} (${Number(lat).toFixed(4)}, ${Number(lon).toFixed(4)})`
         selectedWrap.classList.remove('hidden')
+        latInput.value = String(lat)
+        lonInput.value = String(lon)
       } else {
         selectedName.textContent = ''
         selectedWrap.classList.add('hidden')
@@ -527,6 +544,16 @@ window.onload = async (e) => {
         }
       }
 
+      applyCoordsBtn.onclick = async () => {
+        const lat = parseWeatherCoordinate(latInput.value, -90, 90)
+        const lon = parseWeatherCoordinate(lonInput.value, -180, 180)
+        if (lat === null || lon === null) {
+          await setStatus('preferences.settings.weatherLocationInvalidCoords')
+          return
+        }
+        applySelectedLocation(`${lat}, ${lon}`, lat, lon)
+      }
+
       clearBtn.onclick = () => {
         settings.weatherLocationName = ''
         settings.weatherLat = null
@@ -534,6 +561,8 @@ window.onload = async (e) => {
         window.settings.saveSettings('weatherLocationName', '')
         window.settings.saveSettings('weatherLat', null)
         window.settings.saveSettings('weatherLon', null)
+        latInput.value = ''
+        lonInput.value = ''
         resultsEl.innerHTML = ''
         resultsEl.classList.add('hidden')
         statusEl.textContent = ''
@@ -546,6 +575,15 @@ window.onload = async (e) => {
           searchBtn.click()
         }
       })
+
+      const applyCoordsOnEnter = (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          applyCoordsBtn.click()
+        }
+      }
+      latInput.addEventListener('keydown', applyCoordsOnEnter)
+      lonInput.addEventListener('keydown', applyCoordsOnEnter)
     }
   }
 }

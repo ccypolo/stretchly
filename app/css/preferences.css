@@ -413,6 +413,17 @@ body[dir=rtl] .heart > .authenticate > a {
   padding-left: 20px;
 }
 
+.weather-location-coords {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.weather-location-coords input {
+  width: 7em;
+}
+
 .weather-location-selected {
   font-size: 12px;
   opacity: 0.9;
